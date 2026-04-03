@@ -29,3 +29,6 @@
 
 # Running tests leaves *.spv files in the root directory.
 *.spv
+
+.vscode
+.cache
