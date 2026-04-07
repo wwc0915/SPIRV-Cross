@@ -376,6 +376,7 @@ void Compiler::register_global_read_dependencies(const SPIRBlock &block, uint32_
 
 		case OpLoad:
 		case OpCooperativeMatrixLoadKHR:
+		case OpCooperativeMatrixLoadHW:
 		case OpCooperativeVectorLoadNV:
 		case OpImageRead:
 		{
@@ -843,6 +844,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 	case OpAtomicStore:
 	case OpStore:
 	case OpCooperativeMatrixStoreKHR:
+	case OpCooperativeMatrixStoreHW:
 		// Invalid SPIR-V.
 		if (length < 1)
 			return false;
@@ -936,6 +938,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 	case OpPtrAccessChain:
 	case OpLoad:
 	case OpCooperativeMatrixLoadKHR:
+	case OpCooperativeMatrixLoadHW:
 	case OpCopyObject:
 	case OpImageTexelPointer:
 	case OpAtomicLoad:
@@ -3524,6 +3527,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(Op op, const uint32_t *
 	{
 	case OpStore:
 	case OpCooperativeMatrixStoreKHR:
+	case OpCooperativeMatrixStoreHW:
 	{
 		if (length < 2)
 			return false;
@@ -3645,6 +3649,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(Op op, const uint32_t *
 
 	case OpLoad:
 	case OpCooperativeMatrixLoadKHR:
+	case OpCooperativeMatrixLoadHW:
 	{
 		if (length < 3)
 			return false;
@@ -3865,6 +3870,7 @@ bool Compiler::StaticExpressionAccessHandler::handle(Op op, const uint32_t *args
 	{
 	case OpStore:
 	case OpCooperativeMatrixStoreKHR:
+	case OpCooperativeMatrixStoreHW:
 		if (length < 2)
 			return false;
 		if (args[0] == variable_id)
@@ -3876,6 +3882,7 @@ bool Compiler::StaticExpressionAccessHandler::handle(Op op, const uint32_t *args
 
 	case OpLoad:
 	case OpCooperativeMatrixLoadKHR:
+	case OpCooperativeMatrixLoadHW:
 		if (length < 3)
 			return false;
 		if (args[2] == variable_id && static_expression == 0) // Tried to read from variable before it was initialized.
@@ -4392,6 +4399,7 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 		case OpLoad:
 		case OpCooperativeVectorLoadNV:
 		case OpCooperativeMatrixLoadKHR:
+		case OpCooperativeMatrixLoadHW:
 			if (ops[2] == var)
 				return true;
 			break;
@@ -4566,6 +4574,7 @@ bool Compiler::ActiveBuiltinHandler::handle(Op opcode, const uint32_t *args, uin
 	{
 	case OpStore:
 	case OpCooperativeMatrixStoreKHR:
+	case OpCooperativeMatrixStoreHW:
 		if (length < 1)
 			return false;
 
@@ -4583,6 +4592,7 @@ bool Compiler::ActiveBuiltinHandler::handle(Op opcode, const uint32_t *args, uin
 	case OpCopyObject:
 	case OpLoad:
 	case OpCooperativeMatrixLoadKHR:
+	case OpCooperativeMatrixLoadHW:
 		if (length < 3)
 			return false;
 
@@ -5361,6 +5371,7 @@ bool Compiler::PhysicalStorageBufferPointerHandler::handle(Op op, const uint32_t
 	}
 
 	case OpCooperativeMatrixLoadKHR:
+	case OpCooperativeMatrixLoadHW:
 	case OpCooperativeMatrixStoreKHR:
 	{
 		// TODO: Can we meaningfully deal with this?
@@ -5527,6 +5538,7 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 	{
 	case OpLoad:
 	case OpCooperativeMatrixLoadKHR:
+	case OpCooperativeMatrixLoadHW:
 	case OpCooperativeVectorLoadNV:
 	{
 		if (length < 3)

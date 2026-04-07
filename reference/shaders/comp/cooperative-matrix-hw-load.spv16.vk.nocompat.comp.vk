@@ -1,0 +1,16 @@
+#version 450
+#extension GL_HW_neural_shader : require
+
+layout(local_size_x = 16) in;
+
+layout(binding = 0) buffer MatrixData {
+    float data[];
+};
+
+void main()
+{
+    coopmatHW<float, 16, 16> mat;
+    coopMatLoadHW(mat, data, 16u, 16u, 0u, 0u, gl_RowMajorHW);
+    coopmatHW<float, 16, 16> mat2;
+    coopMatLoadHW(mat2, data, 32u, 32u, 8u, 8u, gl_ColumnMajorHW);
+}

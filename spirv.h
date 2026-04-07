@@ -1294,6 +1294,7 @@ typedef enum SpvCapability_ {
     SpvCapabilityCacheControlsINTEL = 6441,
     SpvCapabilityRegisterLimitsINTEL = 6460,
     SpvCapabilityBindlessImagesINTEL = 6528,
+    SpvCapabilityCooperativeMatrixHW = 6600,
     SpvCapabilityMax = 0x7fffffff,
 } SpvCapability;
 
@@ -1427,6 +1428,12 @@ typedef enum SpvCooperativeMatrixLayout_ {
     SpvCooperativeMatrixLayoutColumnBlockedInterleavedARM = 4203,
     SpvCooperativeMatrixLayoutMax = 0x7fffffff,
 } SpvCooperativeMatrixLayout;
+
+typedef enum SpvCooperativeMatrixLayoutHW_ {
+    SpvCooperativeMatrixLayoutRowMajorHW = 0,
+    SpvCooperativeMatrixLayoutColumnMajorHW = 1,
+    SpvCooperativeMatrixLayoutHWMax = 0x7fffffff,
+} SpvCooperativeMatrixLayoutHW;
 
 typedef enum SpvCooperativeMatrixUse_ {
     SpvCooperativeMatrixUseMatrixAKHR = 0,
@@ -2441,6 +2448,10 @@ typedef enum SpvOp_ {
     SpvOpConvertHandleToImageINTEL = 6529,
     SpvOpConvertHandleToSamplerINTEL = 6530,
     SpvOpConvertHandleToSampledImageINTEL = 6531,
+    SpvOpCooperativeMatrixLengthHW = 6500,
+    SpvOpTypeCooperativeMatrixHW = 6501,
+    SpvOpCooperativeMatrixLoadHW = 6502,
+    SpvOpCooperativeMatrixStoreHW = 6503,
     SpvOpMax = 0x7fffffff,
 } SpvOp;
 
@@ -3274,6 +3285,9 @@ inline void SpvHasResultAndType(SpvOp opcode, bool *hasResult, bool *hasResultTy
     case SpvOpConvertHandleToImageINTEL: *hasResult = true; *hasResultType = true; break;
     case SpvOpConvertHandleToSamplerINTEL: *hasResult = true; *hasResultType = true; break;
     case SpvOpConvertHandleToSampledImageINTEL: *hasResult = true; *hasResultType = true; break;
+    case SpvOpCooperativeMatrixLengthHW: *hasResult = true; *hasResultType = true; break;
+    case SpvOpTypeCooperativeMatrixHW: *hasResult = true; *hasResultType = false; break;
+    case SpvOpCooperativeMatrixLoadHW: *hasResult = true; *hasResultType = true; break;
     }
 }
 inline const char* SpvSourceLanguageToString(SpvSourceLanguage value) {
@@ -4251,6 +4265,7 @@ inline const char* SpvCapabilityToString(SpvCapability value) {
     case SpvCapabilityCacheControlsINTEL: return "CacheControlsINTEL";
     case SpvCapabilityRegisterLimitsINTEL: return "RegisterLimitsINTEL";
     case SpvCapabilityBindlessImagesINTEL: return "BindlessImagesINTEL";
+    case SpvCapabilityCooperativeMatrixHW: return "CooperativeMatrixHW";
     default: return "Unknown";
     }
 }
@@ -5267,6 +5282,9 @@ inline const char* SpvOpToString(SpvOp value) {
     case SpvOpConvertHandleToImageINTEL: return "OpConvertHandleToImageINTEL";
     case SpvOpConvertHandleToSamplerINTEL: return "OpConvertHandleToSamplerINTEL";
     case SpvOpConvertHandleToSampledImageINTEL: return "OpConvertHandleToSampledImageINTEL";
+    case SpvOpCooperativeMatrixLengthHW: return "OpCooperativeMatrixLengthHW";
+    case SpvOpTypeCooperativeMatrixHW: return "OpTypeCooperativeMatrixHW";
+    case SpvOpCooperativeMatrixLoadHW: return "OpCooperativeMatrixLoadHW";
     default: return "Unknown";
     }
 }

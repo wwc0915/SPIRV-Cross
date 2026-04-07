@@ -756,6 +756,25 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
+	case OpTypeCooperativeMatrixHW:
+	{
+		uint32_t id = ops[0];
+		auto &type = set<SPIRType>(id, op);
+
+		type.basetype = SPIRType::CoopMatHW;
+		type.op = op;
+		type.ext.coopMatHW.component_type_id = ops[1];
+		type.ext.coopMatHW.rows_id = ops[2];
+		type.ext.coopMatHW.cols_id = ops[3];
+		type.ext.coopMatHW.use_id = ops[4];
+		type.parent_type = ops[1];
+		type.self = id;
+
+		auto &component_type = get<SPIRType>(type.ext.coopMatHW.component_type_id);
+		type.width = component_type.width;
+		break;
+	}
+
 	case OpTypeCooperativeVectorNV:
 	{
 		uint32_t id = ops[0];

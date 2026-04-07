@@ -88,6 +88,12 @@ static const GlslConstantNameMapping CoopMatMatrixLayoutNames[] = {
 	DEF_GLSL_MAPPING_EXT(CooperativeMatrixLayoutRowMajor),
 	DEF_GLSL_MAPPING_EXT(CooperativeMatrixLayoutColumnMajor),
 };
+
+static const GlslConstantNameMapping CoopMatHWLayoutNames[] = {
+	DEF_GLSL_MAPPING(CooperativeMatrixLayoutRowMajorHW),
+	DEF_GLSL_MAPPING(CooperativeMatrixLayoutColumnMajorHW),
+};
+
 #undef DEF_GLSL_MAPPING
 #undef DEF_GLSL_MAPPING_EXT
 
@@ -10759,7 +10765,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				expr = join("(", expr, ")");
 		}
 		// Arrays and OpTypeCooperativeVectorNV (aka fancy arrays)
-		else if (!type->array.empty() || type->op == OpTypeCooperativeVectorNV)
+		else if (!type->array.empty() || type->op == OpTypeCooperativeVectorNV || type->op == OpTypeCooperativeMatrixHW)
 		{
 			// If we are flattening multidimensional arrays, only create opening bracket on first
 			// array index.
@@ -16035,6 +16041,37 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+	case OpCooperativeMatrixLoadHW:
+	{
+		if (length < 6)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixLoadHW.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t ptr = ops[2];
+		uint32_t src_shape = ops[3];
+		uint32_t src_offset = ops[4];
+		uint32_t layout = ops[5];
+
+		emit_uninitialized_temporary_expression(result_type, id);
+
+		auto expr = to_expression(ptr);
+		pair<string, string> split_expr;
+		if (!is_forcing_recompilation())
+			split_expr = split_coopmat_pointer(expr);
+
+		string layout_expr = to_pretty_expression_if_int_constant(
+				layout, std::begin(CoopMatHWLayoutNames), std::end(CoopMatHWLayoutNames));
+
+		statement("coopMatLoadHW(", to_expression(id), ", ", split_expr.first, ", ", split_expr.second, ", ",
+		          to_expression(src_shape), ".x, ", to_expression(src_shape), ".y, ",
+		          to_expression(src_offset), ".x, ", to_expression(src_offset), ".y, ",
+		          layout_expr, ");");
+
+		register_read(id, ptr, false);
+		break;
+	}
+
 	case OpCooperativeMatrixStoreKHR:
 	{
 		// Spec contradicts itself if stride is optional or not.
@@ -17000,6 +17037,19 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		std::string component_type_str = type_to_glsl(get<SPIRType>(type.ext.coopVecNV.component_type_id));
 
 		return join("coopvecNV<", component_type_str, ", ", to_expression(type.ext.coopVecNV.component_count_id), ">");
+	}
+
+	if (type.op == OpTypeCooperativeMatrixHW)
+	{
+		require_extension_internal("GL_HW_neural_shader");
+		if (!options.vulkan_semantics)
+			SPIRV_CROSS_THROW("Cooperative matrix HW only available in Vulkan.");
+
+		std::string component_type_str = type_to_glsl(get<SPIRType>(type.ext.coopMatHW.component_type_id));
+
+		return join("coopmatHW<", component_type_str, ", ",
+		            to_expression(type.ext.coopMatHW.rows_id), ", ",
+		            to_expression(type.ext.coopMatHW.cols_id), ">");
 	}
 
 	const SPIRType *coop_type = &type;
