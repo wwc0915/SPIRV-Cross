@@ -1254,6 +1254,7 @@ enum Capability {
     CapabilityMaskedGatherScatterINTEL = 6427,
     CapabilityCacheControlsINTEL = 6441,
     CapabilityRegisterLimitsINTEL = 6460,
+    CapabilityCooperativeMatrixHW = 6600,
     CapabilityMax = 0x7fffffff,
 };
 
@@ -1384,6 +1385,12 @@ enum CooperativeMatrixLayout {
     CooperativeMatrixLayoutRowBlockedInterleavedARM = 4202,
     CooperativeMatrixLayoutColumnBlockedInterleavedARM = 4203,
     CooperativeMatrixLayoutMax = 0x7fffffff,
+};
+
+enum CooperativeMatrixLayoutHW {
+    CooperativeMatrixLayoutRowMajorHW = 0,
+    CooperativeMatrixLayoutColumnMajorHW = 1,
+    CooperativeMatrixLayoutHWMax = 0x7fffffff,
 };
 
 enum CooperativeMatrixUse {
@@ -2251,6 +2258,10 @@ enum Op {
     OpGroupLogicalXorKHR = 6408,
     OpMaskedGatherINTEL = 6428,
     OpMaskedScatterINTEL = 6429,
+    OpCooperativeMatrixLengthHW = 6500,
+    OpTypeCooperativeMatrixHW = 6501,
+    OpCooperativeMatrixLoadHW = 6502,
+    OpCooperativeMatrixStoreHW = 6503,
     OpMax = 0x7fffffff,
 };
 
@@ -3021,6 +3032,10 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpGroupLogicalXorKHR: *hasResult = true; *hasResultType = true; break;
     case OpMaskedGatherINTEL: *hasResult = true; *hasResultType = true; break;
     case OpMaskedScatterINTEL: *hasResult = false; *hasResultType = false; break;
+    case OpCooperativeMatrixLengthHW: *hasResult = true; *hasResultType = true; break;
+    case OpTypeCooperativeMatrixHW: *hasResult = true; *hasResultType = false; break;
+    case OpCooperativeMatrixLoadHW: *hasResult = true; *hasResultType = true; break;
+    case OpCooperativeMatrixStoreHW: *hasResult = false; *hasResultType = false; break;
     }
 }
 inline const char* SourceLanguageToString(SourceLanguage value) {
@@ -3946,6 +3961,7 @@ inline const char* CapabilityToString(Capability value) {
     case CapabilityMaskedGatherScatterINTEL: return "MaskedGatherScatterINTEL";
     case CapabilityCacheControlsINTEL: return "CacheControlsINTEL";
     case CapabilityRegisterLimitsINTEL: return "RegisterLimitsINTEL";
+    case CapabilityCooperativeMatrixHW: return "CooperativeMatrixHW";
     default: return "Unknown";
     }
 }
@@ -4865,6 +4881,10 @@ inline const char* OpToString(Op value) {
     case OpGroupLogicalXorKHR: return "OpGroupLogicalXorKHR";
     case OpMaskedGatherINTEL: return "OpMaskedGatherINTEL";
     case OpMaskedScatterINTEL: return "OpMaskedScatterINTEL";
+    case OpCooperativeMatrixLengthHW: return "OpCooperativeMatrixLengthHW";
+    case OpTypeCooperativeMatrixHW: return "OpTypeCooperativeMatrixHW";
+    case OpCooperativeMatrixLoadHW: return "OpCooperativeMatrixLoadHW";
+    case OpCooperativeMatrixStoreHW: return "OpCooperativeMatrixStoreHW";
     default: return "Unknown";
     }
 }

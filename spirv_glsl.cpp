@@ -15363,6 +15363,33 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+	case OpCooperativeMatrixLoadHW:
+	{
+		if (length < 6)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixLoadHW.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t ptr = ops[2];
+		uint32_t src_shape = ops[3];
+		uint32_t src_offset = ops[4];
+		uint32_t layout_id = ops[5];
+
+		emit_uninitialized_temporary_expression(result_type, id);
+
+		auto expr = to_expression(ptr);
+		auto &layout_const = get<SPIRConstant>(layout_id);
+		bool is_column_major = layout_const.scalar() != 0;
+
+		statement("coopMatLoadHW(", to_expression(id), ", ", expr, ", ",
+		          to_expression(src_shape), ", ",
+		          to_expression(src_offset), ", ",
+		          is_column_major ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW", ");");
+
+		register_read(id, ptr, false);
+		break;
+	}
+
 	default:
 		statement("// unimplemented op ", instruction.op);
 		break;
@@ -16182,6 +16209,15 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 
 	case SPIRType::RayQuery:
 		return "rayQueryEXT";
+
+	case SPIRType::CoopMatHW:
+	{
+		require_extension_internal("SPV_HW_neural_shader");
+		auto &component_type = get<SPIRType>(type.ext.coopMatHW.component_type_id);
+		uint32_t rows = get_constant(type.ext.coopMatHW.rows_id).scalar();
+		uint32_t cols = get_constant(type.ext.coopMatHW.cols_id).scalar();
+		return join("coopmatHW<", type_to_glsl(component_type), ", ", rows, "u, ", cols, "u>");
+	}
 
 	case SPIRType::Void:
 		return "void";

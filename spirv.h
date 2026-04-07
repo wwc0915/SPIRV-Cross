@@ -1258,6 +1258,7 @@ typedef enum SpvCapability_ {
     SpvCapabilityMaskedGatherScatterINTEL = 6427,
     SpvCapabilityCacheControlsINTEL = 6441,
     SpvCapabilityRegisterLimitsINTEL = 6460,
+    SpvCapabilityCooperativeMatrixHW = 6600,
     SpvCapabilityMax = 0x7fffffff,
 } SpvCapability;
 
@@ -1389,6 +1390,12 @@ typedef enum SpvCooperativeMatrixLayout_ {
     SpvCooperativeMatrixLayoutColumnBlockedInterleavedARM = 4203,
     SpvCooperativeMatrixLayoutMax = 0x7fffffff,
 } SpvCooperativeMatrixLayout;
+
+typedef enum SpvCooperativeMatrixLayoutHW_ {
+    SpvCooperativeMatrixLayoutRowMajorHW = 0,
+    SpvCooperativeMatrixLayoutColumnMajorHW = 1,
+    SpvCooperativeMatrixLayoutHWMax = 0x7fffffff,
+} SpvCooperativeMatrixLayoutHW;
 
 typedef enum SpvCooperativeMatrixUse_ {
     SpvCooperativeMatrixUseMatrixAKHR = 0,
@@ -2255,6 +2262,10 @@ typedef enum SpvOp_ {
     SpvOpGroupLogicalXorKHR = 6408,
     SpvOpMaskedGatherINTEL = 6428,
     SpvOpMaskedScatterINTEL = 6429,
+    SpvOpCooperativeMatrixLengthHW = 6500,
+    SpvOpTypeCooperativeMatrixHW = 6501,
+    SpvOpCooperativeMatrixLoadHW = 6502,
+    SpvOpCooperativeMatrixStoreHW = 6503,
     SpvOpMax = 0x7fffffff,
 } SpvOp;
 
@@ -3025,6 +3036,10 @@ inline void SpvHasResultAndType(SpvOp opcode, bool *hasResult, bool *hasResultTy
     case SpvOpGroupLogicalXorKHR: *hasResult = true; *hasResultType = true; break;
     case SpvOpMaskedGatherINTEL: *hasResult = true; *hasResultType = true; break;
     case SpvOpMaskedScatterINTEL: *hasResult = false; *hasResultType = false; break;
+    case SpvOpCooperativeMatrixLengthHW: *hasResult = true; *hasResultType = true; break;
+    case SpvOpTypeCooperativeMatrixHW: *hasResult = true; *hasResultType = false; break;
+    case SpvOpCooperativeMatrixLoadHW: *hasResult = true; *hasResultType = true; break;
+    case SpvOpCooperativeMatrixStoreHW: *hasResult = false; *hasResultType = false; break;
     }
 }
 inline const char* SpvSourceLanguageToString(SpvSourceLanguage value) {
@@ -3950,6 +3965,7 @@ inline const char* SpvCapabilityToString(SpvCapability value) {
     case SpvCapabilityMaskedGatherScatterINTEL: return "MaskedGatherScatterINTEL";
     case SpvCapabilityCacheControlsINTEL: return "CacheControlsINTEL";
     case SpvCapabilityRegisterLimitsINTEL: return "RegisterLimitsINTEL";
+    case SpvCapabilityCooperativeMatrixHW: return "CooperativeMatrixHW";
     default: return "Unknown";
     }
 }
@@ -4869,6 +4885,10 @@ inline const char* SpvOpToString(SpvOp value) {
     case SpvOpGroupLogicalXorKHR: return "OpGroupLogicalXorKHR";
     case SpvOpMaskedGatherINTEL: return "OpMaskedGatherINTEL";
     case SpvOpMaskedScatterINTEL: return "OpMaskedScatterINTEL";
+    case SpvOpCooperativeMatrixLengthHW: return "OpCooperativeMatrixLengthHW";
+    case SpvOpTypeCooperativeMatrixHW: return "OpTypeCooperativeMatrixHW";
+    case SpvOpCooperativeMatrixLoadHW: return "OpCooperativeMatrixLoadHW";
+    case SpvOpCooperativeMatrixStoreHW: return "OpCooperativeMatrixStoreHW";
     default: return "Unknown";
     }
 }

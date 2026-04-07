@@ -574,6 +574,7 @@ struct SPIRType : IVariant
 		Sampler,
 		AccelerationStructure,
 		RayQuery,
+		CoopMatHW,
 
 		// Keep internal types at the end.
 		ControlPointArray,
@@ -636,6 +637,18 @@ struct SPIRType : IVariant
 
 	// Used in backends to avoid emitting members with conflicting names.
 	std::unordered_set<std::string> member_name_cache;
+
+	// Extended type-specific data
+	union
+	{
+		struct
+		{
+			uint32_t component_type_id;
+			uint32_t rows_id;
+			uint32_t cols_id;
+			uint32_t use_id;
+		} coopMatHW;
+	} ext;
 
 	SPIRV_CROSS_DECLARE_CLONE(SPIRType)
 };
