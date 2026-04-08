@@ -40,6 +40,12 @@ Cooperative Matrix Reduce CombineOp:
 | -- | -- | -- | -- | -- |
 + Type 必须是 cooperative matrix 类型
 + Result Type 必须是 OpTypeInt
+
+GLSL实现：
+```
+int(coopmatHW<T, M, K>(0).length())
+```
+SPIRV-Cross通过SPIRExpression生成内联表达式，无需额外变量声明。
 #### 2.2.4 内存指令
 1. `OpCooperativeMatrixLoadHW`
 

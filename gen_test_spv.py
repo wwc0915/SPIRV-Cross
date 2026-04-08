@@ -44,11 +44,11 @@ def gen_length_test(outfile):
     ptr_elem = 22; matA = 23; matB = 24
     lenA = 25; lenB = 26
 
-    # Output buffer for length results
-    uint_ptr_sb = 27; rtarray_uint = 28; out_block_t = 29; out_block_ptr_t = 30
-    out_var = 31; ptr_out0 = 32; ptr_out1 = 33
+    # Output buffer for length results (int type)
+    int_t = 27; int_ptr_sb = 28; rtarray_int = 29; out_block_t = 30; out_block_ptr_t = 31
+    out_var = 32; ptr_out0 = 33; ptr_out1 = 34
 
-    BOUND = 34
+    BOUND = 35
 
     out = b''
     # Header
@@ -67,7 +67,7 @@ def gen_length_test(outfile):
     out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
     # Debug names
     for target, name in [(main_f, "main"), (data_var, "data"), (float_t, "float"),
-                          (uint_t, "uint"), (lenA, "lenA"), (lenB, "lenB"),
+                          (uint_t, "uint"), (int_t, "int"), (lenA, "lenA"), (lenB, "lenB"),
                           (out_var, "output")]:
         nw = str_words(name)
         out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
@@ -80,21 +80,22 @@ def gen_length_test(outfile):
     # Annotations - output buffer
     out += inst(OpDecorate, out_block_t, DecorationBlock)
     out += inst(OpMemberDecorate, out_block_t, 0, DecorationOffset, 0)
-    out += inst(OpDecorate, rtarray_uint, DecorationArrayStride, 4)
+    out += inst(OpDecorate, rtarray_int, DecorationArrayStride, 4)
     out += inst(OpDecorate, out_var, DecorationBinding, 1)
     out += inst(OpDecorate, out_var, DecorationDescriptorSet, 0)
     # Types
     out += inst(OpTypeVoid, void_t)
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeInt, int_t, 32, 1)  # signed int for LengthHW result
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
-    out += inst(OpTypePointer, uint_ptr_sb, StorageClassStorageBuffer, uint_t)
+    out += inst(OpTypePointer, int_ptr_sb, StorageClassStorageBuffer, int_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
-    out += inst(OpTypeRuntimeArray, rtarray_uint, uint_t)
+    out += inst(OpTypeRuntimeArray, rtarray_int, int_t)
     out += inst(OpTypeStruct, block_t, rtarray_t)
-    out += inst(OpTypeStruct, out_block_t, rtarray_uint)
+    out += inst(OpTypeStruct, out_block_t, rtarray_int)
     out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
     out += inst(OpTypePointer, out_block_ptr_t, StorageClassStorageBuffer, out_block_t)
     # Constants
@@ -116,14 +117,14 @@ def gen_length_test(outfile):
     # AccessChain for input
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
     # AccessChain for output[0] and output[1]
-    out += inst(OpAccessChain, uint_ptr_sb, ptr_out0, out_var, c0, c0)
-    out += inst(OpAccessChain, uint_ptr_sb, ptr_out1, out_var, c0, c1)
+    out += inst(OpAccessChain, int_ptr_sb, ptr_out0, out_var, c0, c0)
+    out += inst(OpAccessChain, int_ptr_sb, ptr_out1, out_var, c0, c1)
     # Load matrices
     out += inst(OpCooperativeMatrixLoadHW, coopmatA, matA, ptr_elem, dim16, dim0, c0)
     out += inst(OpCooperativeMatrixLoadHW, coopmatB, matB, ptr_elem, dim16, dim0, c1)
-    # OpCooperativeMatrixLengthHW
-    out += inst(OpCooperativeMatrixLengthHW, uint_t, lenA, coopmatA)
-    out += inst(OpCooperativeMatrixLengthHW, uint_t, lenB, coopmatB)
+    # OpCooperativeMatrixLengthHW (result type is int)
+    out += inst(OpCooperativeMatrixLengthHW, int_t, lenA, coopmatA)
+    out += inst(OpCooperativeMatrixLengthHW, int_t, lenB, coopmatB)
     # Store length results to output buffer
     out += inst(OpStore, ptr_out0, lenA)
     out += inst(OpStore, ptr_out1, lenB)
