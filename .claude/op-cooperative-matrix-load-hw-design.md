@@ -53,7 +53,7 @@ enum CooperativeMatrixLayoutHW {
 ### 3.1 GLSL 扩展声明
 
 ```glsl
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 ```
 
 ### 3.2 GLSL 函数签名
@@ -88,7 +88,7 @@ coopmatHW {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 
@@ -123,7 +123,7 @@ OpStore %matA %loaded
 **GLSL 输出** (SPIRV-Cross 生成):
 ```glsl
 #version 450
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 
@@ -146,7 +146,7 @@ void main() {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16, local_size_y = 4) in;
 
@@ -212,7 +212,7 @@ void main() {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
@@ -257,7 +257,7 @@ void main() {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 
 layout(binding = 0) buffer ColMajorMatrix {
     float data[256];  // 16x16 列主序存储
@@ -428,7 +428,7 @@ reference/
 **shaders/comp/cooperative-matrix-hw-load.spv16.vk.nocompat.comp**:
 ```glsl
 #version 450
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 
@@ -453,7 +453,7 @@ void main() {
 **reference/shaders/comp/cooperative-matrix-hw-load.spv16.vk.nocompat.comp.vk**:
 ```glsl
 #version 450
-#extension SPV_HW_neural_shader : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 

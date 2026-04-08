@@ -16212,7 +16212,7 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 
 	case SPIRType::CoopMatHW:
 	{
-		require_extension_internal("SPV_HW_neural_shader");
+		require_extension_internal("GL_HW_neural_shader");
 		auto &component_type = get<SPIRType>(type.ext.coopMatHW.component_type_id);
 		uint32_t rows = get_constant(type.ext.coopMatHW.rows_id).scalar();
 		uint32_t cols = get_constant(type.ext.coopMatHW.cols_id).scalar();

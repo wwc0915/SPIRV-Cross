@@ -34,8 +34,14 @@ Cooperative Matrix Reduce CombineOp:
 3. 当存在时，Operands是由指令所使用的任何字面量、其他指令的Result\<id\>等。每个操作数始终为32位
 
 #### 2.2.1 杂项指令
+`OpCooperativeMatrixLengthHW`
+返回mat可访问的组件数量
+| 4 | opcode: 6500 | \<id\> Result Type | Result \<id\> | \<id\> Type
+| -- | -- | -- | -- | -- |
++ Type 必须是 cooperative matrix 类型
++ Result Type 必须是 OpTypeInt
 #### 2.2.4 内存指令
-1. OpCooperativeMatrixLoadHW
+1. `OpCooperativeMatrixLoadHW`
 
 | 5+vars | opcode: 6502 | \<id\> Result Type | Result \<id\>| \<id\> Pointer | \<id\> srcMatrixShape | \<id\> srcMatrixOffset | \<id\> layout |
 | -- | -- | -- | -- | -- | -- | -- | -- |
