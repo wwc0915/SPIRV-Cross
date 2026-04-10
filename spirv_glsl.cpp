@@ -15401,6 +15401,30 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+		case OpCooperativeMatrixStoreHW:
+		{
+			if (length < 5)
+				SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixStoreHW.");
+
+			uint32_t ptr = ops[0];
+			uint32_t object = ops[1];
+			uint32_t src_shape = ops[2];
+			uint32_t src_offset = ops[3];
+			uint32_t layout_id = ops[4];
+
+			auto expr = to_expression(ptr);
+			auto &layout_const = get<SPIRConstant>(layout_id);
+			bool is_column_major = layout_const.scalar() != 0;
+
+			statement("coopMatStoreHW(", to_expression(object), ", ", expr, ", ",
+			          to_expression(src_shape), ", ",
+			          to_expression(src_offset), ", ",
+			          is_column_major ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW", ");");
+
+			register_write(object);
+			break;
+		}
+
 	default:
 		statement("// unimplemented op ", instruction.op);
 		break;
