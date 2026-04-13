@@ -6023,6 +6023,36 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c,
 		else
 			return join(type_to_glsl(type), "(0)");
 	}
+	else if (type.basetype == SPIRType::CoopMatHW)
+	{
+		// Cooperative matrix constant - render as type(value, ...)
+		auto &component_type = get<SPIRType>(type.ext.coopMatHW.component_type_id);
+		string res = type_to_glsl(type) + "(";
+		for (uint32_t i = 0; i < c.vector_size(); i++)
+		{
+			if (i > 0)
+				res += ", ";
+			switch (component_type.basetype)
+			{
+			case SPIRType::Float:
+				res += convert_float_to_string(c, 0, i);
+				break;
+			case SPIRType::Half:
+				res += convert_half_to_string(c, 0, i);
+				break;
+			case SPIRType::Int:
+				res += convert_to_string(c.scalar_i32(0, i));
+				break;
+			case SPIRType::UInt:
+				res += convert_to_string(c.scalar(0, i));
+				break;
+			default:
+				SPIRV_CROSS_THROW("Unsupported component type for CoopMatHW constant.");
+			}
+		}
+		res += ")";
+		return res;
+	}
 	else if (c.columns() == 1)
 	{
 		auto res = constant_expression_vector(c, 0);
