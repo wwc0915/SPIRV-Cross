@@ -81,3 +81,24 @@ void coopMatStoreHW(coopmatHW<T, M, K> matA, T buf[], vec2 srcMatrixShape, vec2 
 详细设计文档：
 - [OpCooperativeMatrixLoadHW 设计文档](op-cooperative-matrix-load-hw-design.md)
 - [OpCooperativeMatrixStoreHW 设计文档](op-cooperative-matrix-store-hw-design.md)
+
+#### 2.2.5 算数指令
+`OpCooperativeMatrixMulAddHW`
+矩阵A与矩阵B相乘，然后逐元素加上矩阵C。操作的顺序取决于实现方式。浮点运算的内部精度由客户端API定义。如果存在Matrix{A,B,C}SignedComponentsHW操作数，则相应矩阵操作数的元素将sign-extended到结果类型的精度，否则将零扩展。
+
+| 6+variable | opcode:6504 | \<id\> Result Type | Result \<id\> | \<A\> | \<B\> | \<C\> |
+| -- | -- | -- | -- | -- | -- | -- |
+
++ Result Type必须是一个具有M行和N列的协作矩阵类型
++ A是M行、K列的协作矩阵，数据类型为T
++ B是K行、N列的协作矩阵，数据类型为T
++ C是M行、N列的协作矩阵，数据类型为T1
+
+```
+void coopmatMulAddHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coopmatHW<T, K, N> matB, coopmatHW<T1, M, N> matC)
+```
+
+详细设计文档：
+- [OpCooperativeMatrixMulAddHW 设计文档](op-cooperative-matrix-muladd-hw-design.md)
+
+#### 2.2.6 规约指令

@@ -15439,6 +15439,27 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+	case OpCooperativeMatrixMulAddHW:
+	{
+		if (length < 5)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixMulAddHW.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t a = ops[2];
+		uint32_t b = ops[3];
+		uint32_t c = ops[4];
+
+		emit_uninitialized_temporary_expression(result_type, id);
+
+		statement("coopmatMulAddHW(", to_expression(id), ", ",
+		          to_expression(a), ", ",
+		          to_expression(b), ", ",
+		          to_expression(c), ");");
+
+		break;
+	}
+
 	case OpCooperativeMatrixStoreHW:
 	{
 		if (length < 5)

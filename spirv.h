@@ -2266,6 +2266,7 @@ typedef enum SpvOp_ {
     SpvOpTypeCooperativeMatrixHW = 6501,
     SpvOpCooperativeMatrixLoadHW = 6502,
     SpvOpCooperativeMatrixStoreHW = 6503,
+    SpvOpCooperativeMatrixMulAddHW = 6504,
     SpvOpMax = 0x7fffffff,
 } SpvOp;
 
@@ -3040,6 +3041,7 @@ inline void SpvHasResultAndType(SpvOp opcode, bool *hasResult, bool *hasResultTy
     case SpvOpTypeCooperativeMatrixHW: *hasResult = true; *hasResultType = false; break;
     case SpvOpCooperativeMatrixLoadHW: *hasResult = true; *hasResultType = true; break;
     case SpvOpCooperativeMatrixStoreHW: *hasResult = false; *hasResultType = false; break;
+    case SpvOpCooperativeMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
     }
 }
 inline const char* SpvSourceLanguageToString(SpvSourceLanguage value) {
@@ -4889,6 +4891,7 @@ inline const char* SpvOpToString(SpvOp value) {
     case SpvOpTypeCooperativeMatrixHW: return "OpTypeCooperativeMatrixHW";
     case SpvOpCooperativeMatrixLoadHW: return "OpCooperativeMatrixLoadHW";
     case SpvOpCooperativeMatrixStoreHW: return "OpCooperativeMatrixStoreHW";
+    case SpvOpCooperativeMatrixMulAddHW: return "OpCooperativeMatrixMulAddHW";
     default: return "Unknown";
     }
 }
