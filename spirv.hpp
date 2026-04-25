@@ -2263,6 +2263,7 @@ enum Op {
     OpCooperativeMatrixLoadHW = 6502,
     OpCooperativeMatrixStoreHW = 6503,
     OpCooperativeMatrixMulAddHW = 6504,
+    OpCooperativeMatrixReduceHW = 6505,
     OpMax = 0x7fffffff,
 };
 
@@ -3038,6 +3039,7 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpCooperativeMatrixLoadHW: *hasResult = true; *hasResultType = true; break;
     case OpCooperativeMatrixStoreHW: *hasResult = false; *hasResultType = false; break;
     case OpCooperativeMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
+    case OpCooperativeMatrixReduceHW: *hasResult = true; *hasResultType = true; break;
     }
 }
 inline const char* SourceLanguageToString(SourceLanguage value) {
@@ -4888,6 +4890,7 @@ inline const char* OpToString(Op value) {
     case OpCooperativeMatrixLoadHW: return "OpCooperativeMatrixLoadHW";
     case OpCooperativeMatrixStoreHW: return "OpCooperativeMatrixStoreHW";
     case OpCooperativeMatrixMulAddHW: return "OpCooperativeMatrixMulAddHW";
+    case OpCooperativeMatrixReduceHW: return "OpCooperativeMatrixReduceHW";
     default: return "Unknown";
     }
 }

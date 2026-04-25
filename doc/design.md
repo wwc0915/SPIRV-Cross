@@ -86,7 +86,7 @@ void coopMatStoreHW(coopmatHW<T, M, K> matA, T buf[], vec2 srcMatrixShape, vec2 
 `OpCooperativeMatrixMulAddHW`
 矩阵A与矩阵B相乘，然后逐元素加上矩阵C。操作的顺序取决于实现方式。浮点运算的内部精度由客户端API定义。如果存在Matrix{A,B,C}SignedComponentsHW操作数，则相应矩阵操作数的元素将sign-extended到结果类型的精度，否则将零扩展。
 
-| 6+variable | opcode:6504 | \<id\> Result Type | Result \<id\> | \<A\> | \<B\> | \<C\> |
+| 6+variable | opcode:6504 | \<id\> Result Type | Result \<id\> | \<id\> A | \<id\> B | \<id\> C |
 | -- | -- | -- | -- | -- | -- | -- |
 
 + Result Type必须是一个具有M行和N列的协作矩阵类型
@@ -101,4 +101,37 @@ void coopmatMulAddHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coop
 详细设计文档：
 - [OpCooperativeMatrixMulAddHW 设计文档](op-cooperative-matrix-muladd-hw-design.md)
 
+另外，不新增`OpCooperativeMatrixMulHw`,只是把`OpCooperativeMatrixMulAddHW`的C设为None
+| 6+variable | opcode:6504 | \<id\> Result Type | Result \<id\> | \<id\> A | \<id\> B | \<id\> None |
+| -- | -- | -- | -- | -- | -- | -- |
+函数签名：
+```
+void coopmatMulHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coopmatHW<T, K, N> matB)
+```
+
+详细设计文档：
+- [coopmatMulHW 设计文档](op-cooperative-matrix-mul-hw-design.md)
+
 #### 2.2.6 规约指令
+`OpCooperativeMatrixReduceHW`
+对一个数据类型T，M行N列的矩阵进行规约计算，输出的数据类型是T，M行N列的矩阵。输出结果是广播到矩阵的每个参数上的。
+
+| 5 variable | opcode:6505 | \<id\> Result Type | Result \<id\> | \<id\> reduceMask | \<id\> combineOp |
+| -- | -- | -- | -- | -- | -- |
+
+允许协作矩阵类型用于以下算术指令:
++ OpSNegate and OpFNegate
++ OpIAdd, OpFAdd, OpISub, OpFSub, OpFMul, OpIMul, OpFDiv, OpSDiv, and OpUDiv
++ 如果它们的Component类型合适：
+    + OpF指令可以用于组件类型为浮点类型的协作矩阵
+    + OpI、OpS和OpU指令可以用于组件类型为整数类型的协作矩阵
++ 单目算术指令对协作矩阵的各个元素进行操作，双目算术指令对类型必须匹配的一对协作矩阵的各个元素进行操作
++ 允许协作矩阵类型用于OpMatrixTimesScalar
+
+函数签名
+```
+coopmatHW<T, M, N> coopMatReduceHW(coopmat<T, M, N> mat, int reduceMask, int combineOp)
+```
+
+详细设计文档：
+- [OpCooperativeMatrixReduceHW 设计文档](op-cooperative-matrix-reduce-hw-design.md)

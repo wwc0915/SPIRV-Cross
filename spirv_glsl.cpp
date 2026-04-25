@@ -15441,21 +15441,62 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 	case OpCooperativeMatrixMulAddHW:
 	{
-		if (length < 5)
+		if (length < 4)
 			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixMulAddHW.");
 
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		uint32_t a = ops[2];
 		uint32_t b = ops[3];
-		uint32_t c = ops[4];
 
 		emit_uninitialized_temporary_expression(result_type, id);
 
-		statement("coopmatMulAddHW(", to_expression(id), ", ",
-		          to_expression(a), ", ",
-		          to_expression(b), ", ",
-		          to_expression(c), ");");
+		if (length >= 5 && maybe_get<SPIRUndef>(ops[4]) == nullptr)
+		{
+			uint32_t c = ops[4];
+			statement("coopmatMulAddHW(", to_expression(id), ", ",
+			          to_expression(a), ", ",
+			          to_expression(b), ", ",
+			          to_expression(c), ");");
+		}
+		else
+		{
+			statement("coopmatMulHW(", to_expression(id), ", ",
+			          to_expression(a), ", ",
+			          to_expression(b), ");");
+		}
+
+		break;
+	}
+
+	case OpCooperativeMatrixReduceHW:
+	{
+		if (length < 5)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixReduceHW.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t matrix = ops[2];
+		uint32_t reduce_mask_id = ops[3];
+		uint32_t combine_op_id = ops[4];
+
+		emit_uninitialized_temporary_expression(result_type, id);
+
+		auto &mask_const = get<SPIRConstant>(reduce_mask_id);
+		auto &op_const = get<SPIRConstant>(combine_op_id);
+		uint32_t mask_val = mask_const.scalar();
+		uint32_t op_val = op_const.scalar();
+
+		auto mask_str = (mask_val == 0) ? "gl_CooperativeMatrixReduceRowHW"
+		                               : "gl_CooperativeMatrixReduceColumnHW";
+		auto op_str = (op_val == 0) ? "gl_CooperativeMatrixReduceAddHW"
+		             : (op_val == 1) ? "gl_CooperativeMatrixReduceMinHW"
+		                              : "gl_CooperativeMatrixReduceMaxHW";
+
+		statement("coopMatReduceHW(", to_expression(id), ", ",
+		          to_expression(matrix), ", ",
+		          mask_str, ", ",
+		          op_str, ");");
 
 		break;
 	}
