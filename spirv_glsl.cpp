@@ -15480,8 +15480,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t reduce_mask_id = ops[3];
 		uint32_t combine_op_id = ops[4];
 
-		emit_uninitialized_temporary_expression(result_type, id);
-
 		auto &mask_const = get<SPIRConstant>(reduce_mask_id);
 		auto &op_const = get<SPIRConstant>(combine_op_id);
 		uint32_t mask_val = mask_const.scalar();
@@ -15493,10 +15491,9 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		             : (op_val == 1) ? "gl_CooperativeMatrixReduceMinHW"
 		                              : "gl_CooperativeMatrixReduceMaxHW";
 
-		statement("coopMatReduceHW(", to_expression(id), ", ",
-		          to_expression(matrix), ", ",
-		          mask_str, ", ",
-		          op_str, ");");
+		auto expr = join("coopMatReduceHW(", to_expression(matrix), ", ",
+		                 mask_str, ", ", op_str, ")");
+		emit_op(result_type, id, expr, false);
 
 		break;
 	}

@@ -61,8 +61,7 @@ ReduceMax = 0x2  // 最大值
 ### 3.1 GLSL 函数签名
 
 ```glsl
-void coopMatReduceHW(
-    out coopmatHW<T, M, N> matO,    // 输出矩阵（规约结果广播）
+coopmatHW<T, M, N> coopMatReduceHW(
     coopmatHW<T, M, N> mat,         // 输入矩阵
     uint reduceMask,                 // 规约掩码
     uint combineOp                   // 规约操作
@@ -113,34 +112,20 @@ case OpCooperativeMatrixReduceHW:
     uint32_t reduce_mask_id = ops[3];
     uint32_t combine_op_id = ops[4];
 
-    emit_uninitialized_temporary_expression(result_type, id);
-
     auto &mask_const = get<SPIRConstant>(reduce_mask_id);
     auto &op_const = get<SPIRConstant>(combine_op_id);
     uint32_t mask_val = mask_const.scalar();
     uint32_t op_val = op_const.scalar();
 
-    const char *mask_str;
-    switch (mask_val)
-    {
-    case 0: mask_str = "gl_CooperativeMatrixReduceRowHW"; break;
-    case 1: mask_str = "gl_CooperativeMatrixReduceColumnHW"; break;
-    default: mask_str = to_expression(reduce_mask_id).c_str(); break;
-    }
+    auto mask_str = (mask_val == 0) ? "gl_CooperativeMatrixReduceRowHW"
+                                   : "gl_CooperativeMatrixReduceColumnHW";
+    auto op_str = (op_val == 0) ? "gl_CooperativeMatrixReduceAddHW"
+                 : (op_val == 1) ? "gl_CooperativeMatrixReduceMinHW"
+                                  : "gl_CooperativeMatrixReduceMaxHW";
 
-    const char *op_str;
-    switch (op_val)
-    {
-    case 0: op_str = "gl_CooperativeMatrixReduceAddHW"; break;
-    case 1: op_str = "gl_CooperativeMatrixReduceMinHW"; break;
-    case 2: op_str = "gl_CooperativeMatrixReduceMaxHW"; break;
-    default: op_str = to_expression(combine_op_id).c_str(); break;
-    }
-
-    statement("coopMatReduceHW(", to_expression(id), ", ",
-              to_expression(matrix), ", ",
-              mask_str, ", ",
-              op_str, ");");
+    auto expr = join("coopMatReduceHW(", to_expression(matrix), ", ",
+                     mask_str, ", ", op_str, ")");
+    emit_op(result_type, id, expr, false);
 
     break;
 }
@@ -154,16 +139,14 @@ case OpCooperativeMatrixReduceHW:
 
 **期望 GLSL 输出**:
 ```glsl
-coopmatHW<float, 16u, 16u> result;
-coopMatReduceHW(result, matA, gl_CooperativeMatrixReduceRowHW, gl_CooperativeMatrixReduceAddHW);
+coopmatHW<float, 16u, 16u> result1 = coopMatReduceHW(matA, gl_CooperativeMatrixReduceRowHW, gl_CooperativeMatrixReduceAddHW);
 ```
 
 ### 5.2 Column ReduceMax 测试
 
 **期望 GLSL 输出**:
 ```glsl
-coopmatHW<float, 16u, 16u> result;
-coopMatReduceHW(result, matA, gl_CooperativeMatrixReduceColumnHW, gl_CooperativeMatrixReduceMaxHW);
+coopmatHW<float, 16u, 16u> result2 = coopMatReduceHW(matA, gl_CooperativeMatrixReduceColumnHW, gl_CooperativeMatrixReduceMaxHW);
 ```
 
 ---
