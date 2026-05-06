@@ -135,3 +135,7 @@ coopmatHW<T, M, N> coopMatReduceHW(coopmat<T, M, N> mat, int reduceMask, int com
 
 详细设计文档：
 - [OpCooperativeMatrixReduceHW 设计文档](op-cooperative-matrix-reduce-hw-design.md)
+#### 2.2.7 转换指令
+允许写作向量类型用于以下转换指令（如果分量类型合适）:OpConvertFToU、OpConvertFToS、OpConvertSToF、OpConvertUToF、OpUConvert、OpSConvert、OpFConvert。结果类型和值类型必须具有相同的分量数量。
+
+允许协作向量类型用于OpBitcast。结果类型和值类型必须具有相同的分量数量以及每个分量的相同位数。

@@ -13673,6 +13673,14 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t id = ops[1];
 
 		auto &type = get<SPIRType>(result_type);
+
+		if (type.basetype == SPIRType::CoopMatHW)
+		{
+			auto func = type_to_glsl_constructor(type);
+			emit_unary_func_op(result_type, id, ops[2], func.c_str());
+			break;
+		}
+
 		auto &arg_type = expression_type(ops[2]);
 		auto func = type_to_glsl_constructor(type);
 
@@ -13690,6 +13698,14 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		auto &type = get<SPIRType>(result_type);
+
+		if (type.basetype == SPIRType::CoopMatHW)
+		{
+			auto func = type_to_glsl_constructor(type);
+			emit_unary_func_op(result_type, id, ops[2], func.c_str());
+			break;
+		}
+
 		auto expected_type = type;
 		auto &float_type = expression_type(ops[2]);
 		expected_type.basetype =
@@ -13715,6 +13731,13 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		uint32_t arg = ops[2];
+
+		if (get<SPIRType>(result_type).basetype == SPIRType::CoopMatHW)
+		{
+			auto func = type_to_glsl_constructor(get<SPIRType>(result_type));
+			emit_unary_func_op(result_type, id, arg, func.c_str());
+			break;
+		}
 
 		if (!emit_complex_bitcast(result_type, id, arg))
 		{
