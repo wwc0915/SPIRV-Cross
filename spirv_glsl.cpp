@@ -15474,19 +15474,29 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		emit_uninitialized_temporary_expression(result_type, id);
 
-		if (length >= 5 && maybe_get<SPIRUndef>(ops[4]) == nullptr)
+		bool has_c = false;
+		if (length >= 5)
 		{
-			uint32_t c = ops[4];
+			if (maybe_get<SPIRUndef>(ops[4]) != nullptr)
+				has_c = false;
+			else if (auto *c_const = maybe_get<SPIRConstant>(ops[4]))
+				has_c = !c_const->constant_is_null();
+			else
+				has_c = true;
+		}
+
+		if (has_c)
+		{
 			statement("coopmatMulAddHW(", to_expression(id), ", ",
-			          to_expression(a), ", ",
-			          to_expression(b), ", ",
-			          to_expression(c), ");");
+				          to_expression(a), ", ",
+				          to_expression(b), ", ",
+				          to_expression(ops[4]), ");");
 		}
 		else
 		{
 			statement("coopmatMulHW(", to_expression(id), ", ",
-			          to_expression(a), ", ",
-			          to_expression(b), ");");
+				          to_expression(a), ", ",
+				          to_expression(b), ");");
 		}
 
 		break;
