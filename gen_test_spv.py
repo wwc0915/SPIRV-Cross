@@ -616,6 +616,91 @@ def gen_convert_test(outfile):
         f.write(bytes(data))
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
+def gen_bitcast32_test(outfile):
+    """Generate test for coopmatHW 32-bit bitcast: float32<->uint32, float32<->int32."""
+    # IDs
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; v2uint_t = 5; float_t = 6
+    int_t = 7
+    float_ptr_sb = 8; rtarray_t = 9; block_t = 10; block_ptr_t = 11
+    data_var = 12; label = 13; glsl_id = 14
+    c16 = 15; c16b = 16; c0 = 17; c1 = 18; c2 = 19
+    dim16 = 20; dim0 = 21
+    coopmatF32 = 22; coopmatI32 = 23; coopmatU32 = 24
+    ptr_elem = 25; matF = 26
+    # Bitcast results
+    result_f2i = 27; result_i2f = 28; result_f2u = 29; result_u2f = 30
+
+    BOUND = 31
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1) + inst(OpCapability, 6600)
+    sw = str_words("GLSL.std.450")
+    out += word(((1 + len(sw) + 1) << 16) | OpExtInstImport) + word(glsl_id) + b''.join(word(w) for w in sw)
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (data_var, "data"), (float_t, "float"),
+                          (uint_t, "uint"), (int_t, "int"),
+                          (matF, "matF"), (result_f2i, "result_f2i"),
+                          (result_i2f, "result_i2f"), (result_f2u, "result_f2u"),
+                          (result_u2f, "result_u2f")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, data_var, DecorationBinding, 0)
+    out += inst(OpDecorate, data_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeFloat, float_t, 32)
+    out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeInt, int_t, 32, 1)
+    out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, uint_t, c16, 16)
+    out += inst(OpConstant, uint_t, c16b, 16)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstant, uint_t, c1, 1)
+    out += inst(OpConstant, uint_t, c2, 2)
+    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
+    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    # CoopMat types with 32-bit component types (all Accumulator use=2)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatF32, float_t, c16, c16b, c2)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatI32, int_t, c16, c16b, c2)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatU32, uint_t, c16, c16b, c2)
+    out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
+    # Load float32 coopmat
+    out += inst(OpCooperativeMatrixLoadHW, coopmatF32, matF, ptr_elem, dim16, dim0, c0)
+    # Bitcast: float32 -> int32 (should emit floatBitsToInt)
+    out += inst(OpBitcast, coopmatI32, result_f2i, matF)
+    # Bitcast: int32 -> float32 (should emit intBitsToFloat)
+    out += inst(OpBitcast, coopmatF32, result_i2f, result_f2i)
+    # Bitcast: float32 -> uint32 (should emit floatBitsToUint)
+    out += inst(OpBitcast, coopmatU32, result_f2u, matF)
+    # Bitcast: uint32 -> float32 (should emit uintBitsToFloat)
+    out += inst(OpBitcast, coopmatF32, result_u2f, result_f2u)
+    # Store results
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2i, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_i2f, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2u, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_u2f, dim16, dim0, c0)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
 def gen_mul_null_test(outfile):
     """Generate test for coopmatMulHW via MulAddHW with C=OpConstantNull (null constant)."""
     void_t = 1; func_t = 2; main_f = 3; uint_t = 4; v2uint_t = 5; float_t = 6
@@ -687,12 +772,109 @@ def gen_mul_null_test(outfile):
         f.write(bytes(data))
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
+def gen_bitcast16_test(outfile):
+    """Generate test for coopmatHW 16-bit bitcast: float16<->int16, float16<->uint16."""
+    # IDs
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; v2uint_t = 5; float_t = 6
+    float_ptr_sb = 7; rtarray_t = 8; block_t = 9; block_ptr_t = 10
+    data_var = 11; label = 12; glsl_id = 13
+    c16 = 14; c16b = 15; c0 = 16; c1 = 17; c2 = 18
+    dim16 = 19; dim0 = 20
+    # 16-bit types
+    half_t = 21; short_t = 22; ushort_t = 23
+    # CoopMat types (all Accumulator use=2)
+    coopmatF16 = 24; coopmatI16 = 25; coopmatU16 = 26
+    ptr_elem = 27; matF16 = 28
+    # Bitcast results
+    result_f2i = 29; result_i2f = 30; result_f2u = 31; result_u2f = 32
+
+    BOUND = 33
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1) + inst(OpCapability, 6600)
+    # Float16 capability for 16-bit types
+    out += inst(OpCapability, 3)  # Float16
+    out += inst(OpCapability, 22)  # Int16
+    sw = str_words("GLSL.std.450")
+    out += word(((1 + len(sw) + 1) << 16) | OpExtInstImport) + word(glsl_id) + b''.join(word(w) for w in sw)
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (data_var, "data"), (float_t, "float"),
+                          (uint_t, "uint"), (half_t, "half"), (short_t, "short"),
+                          (ushort_t, "ushort"),
+                          (matF16, "matF16"), (result_f2i, "result_f2i"),
+                          (result_i2f, "result_i2f"), (result_f2u, "result_f2u"),
+                          (result_u2f, "result_u2f")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, data_var, DecorationBinding, 0)
+    out += inst(OpDecorate, data_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeFloat, float_t, 32)
+    out += inst(OpTypeFloat, half_t, 16)       # float16
+    out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeInt, short_t, 16, 1)     # int16 (signed)
+    out += inst(OpTypeInt, ushort_t, 16, 0)    # uint16 (unsigned)
+    out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, uint_t, c16, 16)
+    out += inst(OpConstant, uint_t, c16b, 16)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstant, uint_t, c1, 1)
+    out += inst(OpConstant, uint_t, c2, 2)
+    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
+    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    # CoopMat types with 16-bit component types (all Accumulator use=2)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatF16, half_t, c16, c16b, c2)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatI16, short_t, c16, c16b, c2)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatU16, ushort_t, c16, c16b, c2)
+    out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
+    # Load float16 coopmat
+    out += inst(OpCooperativeMatrixLoadHW, coopmatF16, matF16, ptr_elem, dim16, dim0, c0)
+    # Bitcast: float16 -> int16 (should emit float16BitsToInt16)
+    out += inst(OpBitcast, coopmatI16, result_f2i, matF16)
+    # Bitcast: int16 -> float16 (should emit int16BitsToFloat16)
+    out += inst(OpBitcast, coopmatF16, result_i2f, result_f2i)
+    # Bitcast: float16 -> uint16 (should emit float16BitsToUint16)
+    out += inst(OpBitcast, coopmatU16, result_f2u, matF16)
+    # Bitcast: uint16 -> float16 (should emit uint16BitsToFloat16)
+    out += inst(OpBitcast, coopmatF16, result_u2f, result_f2u)
+    # Store results
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2i, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_i2f, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2u, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_u2f, dim16, dim0, c0)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
 if __name__ == '__main__':
     import os
     outfile = sys.argv[1] if len(sys.argv) > 1 else 'test_hw_length.spv'
     base = os.path.basename(outfile)
     if 'const_store' in base:
         gen_const_store_test(outfile)
+    elif 'bitcast16' in base:
+        gen_bitcast16_test(outfile)
+    elif 'bitcast32' in base:
+        gen_bitcast32_test(outfile)
     elif 'convert' in base:
         gen_convert_test(outfile)
     elif 'mul_null' in base:

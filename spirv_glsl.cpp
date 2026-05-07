@@ -13734,6 +13734,18 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		if (get<SPIRType>(result_type).basetype == SPIRType::CoopMatHW)
 		{
+			auto &arg_type = expression_type(arg);
+			if (arg_type.basetype == SPIRType::CoopMatHW)
+			{
+				auto &out_component = get<SPIRType>(get<SPIRType>(result_type).ext.coopMatHW.component_type_id);
+				auto &in_component = get<SPIRType>(arg_type.ext.coopMatHW.component_type_id);
+				auto op = bitcast_glsl_op(out_component, in_component);
+				if (!op.empty())
+				{
+					emit_unary_func_op(result_type, id, arg, op.c_str());
+					break;
+				}
+			}
 			auto func = type_to_glsl_constructor(get<SPIRType>(result_type));
 			emit_unary_func_op(result_type, id, arg, func.c_str());
 			break;
