@@ -575,6 +575,7 @@ struct SPIRType : IVariant
 		AccelerationStructure,
 		RayQuery,
 		CoopMatHW,
+		CoopVecHW,
 
 		// Keep internal types at the end.
 		ControlPointArray,
@@ -648,6 +649,11 @@ struct SPIRType : IVariant
 			uint32_t cols_id;
 			uint32_t use_id;
 		} coopMatHW;
+		struct
+		{
+			uint32_t component_type_id;
+			uint32_t component_count_id;
+		} coopVecHW;
 	} ext;
 
 	SPIRV_CROSS_DECLARE_CLONE(SPIRType)

@@ -371,6 +371,7 @@ void Compiler::register_global_read_dependencies(const SPIRBlock &block, uint32_
 
 		case OpLoad:
 		case OpCooperativeMatrixLoadHW:
+		case OpCooperativeVectorLoadHW:
 		case OpImageRead:
 		{
 			// If we're in a storage class which does not get invalidated, adding dependencies here is no big deal.
@@ -821,6 +822,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 	case OpAtomicStore:
 	case OpStore:
 	case OpCooperativeMatrixStoreHW:
+	case OpCooperativeVectorStoreHW:
 		// Invalid SPIR-V.
 		if (length < 1)
 			return false;
@@ -914,6 +916,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 	case OpPtrAccessChain:
 	case OpLoad:
 	case OpCooperativeMatrixLoadHW:
+	case OpCooperativeVectorLoadHW:
 	case OpCopyObject:
 	case OpImageTexelPointer:
 	case OpAtomicLoad:
@@ -3466,6 +3469,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 	{
 	case OpStore:
 	case OpCooperativeMatrixStoreHW:
+	case OpCooperativeVectorStoreHW:
 	{
 		if (length < 2)
 			return false;

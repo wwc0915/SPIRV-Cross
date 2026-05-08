@@ -1259,6 +1259,7 @@ typedef enum SpvCapability_ {
     SpvCapabilityCacheControlsINTEL = 6441,
     SpvCapabilityRegisterLimitsINTEL = 6460,
     SpvCapabilityCooperativeMatrixHW = 6600,
+    SpvCapabilityCooperativeVectorHW = 6607,
     SpvCapabilityMax = 0x7fffffff,
 } SpvCapability;
 
@@ -2268,6 +2269,11 @@ typedef enum SpvOp_ {
     SpvOpCooperativeMatrixStoreHW = 6503,
     SpvOpCooperativeMatrixMulAddHW = 6504,
     SpvOpCooperativeMatrixReduceHW = 6505,
+    SpvOpTypeCooperativeVectorHW = 6608,
+    SpvOpCooperativeVectorLoadHW = 6609,
+    SpvOpCooperativeVectorStoreHW = 6610,
+    SpvOpCooperativeVectorMatrixMulAddHW = 6611,
+    SpvOpCooperativeVectorMatrixMulHW = 6612,
     SpvOpMax = 0x7fffffff,
 } SpvOp;
 
@@ -3044,6 +3050,11 @@ inline void SpvHasResultAndType(SpvOp opcode, bool *hasResult, bool *hasResultTy
     case SpvOpCooperativeMatrixStoreHW: *hasResult = false; *hasResultType = false; break;
     case SpvOpCooperativeMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
     case SpvOpCooperativeMatrixReduceHW: *hasResult = true; *hasResultType = true; break;
+    case SpvOpTypeCooperativeVectorHW: *hasResult = true; *hasResultType = false; break;
+    case SpvOpCooperativeVectorLoadHW: *hasResult = true; *hasResultType = true; break;
+    case SpvOpCooperativeVectorStoreHW: *hasResult = false; *hasResultType = false; break;
+    case SpvOpCooperativeVectorMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
+    case SpvOpCooperativeVectorMatrixMulHW: *hasResult = true; *hasResultType = true; break;
     }
 }
 inline const char* SpvSourceLanguageToString(SpvSourceLanguage value) {
@@ -3970,6 +3981,7 @@ inline const char* SpvCapabilityToString(SpvCapability value) {
     case SpvCapabilityCacheControlsINTEL: return "CacheControlsINTEL";
     case SpvCapabilityRegisterLimitsINTEL: return "RegisterLimitsINTEL";
     case SpvCapabilityCooperativeMatrixHW: return "CooperativeMatrixHW";
+    case SpvCapabilityCooperativeVectorHW: return "CooperativeVectorHW";
     default: return "Unknown";
     }
 }
@@ -4895,6 +4907,11 @@ inline const char* SpvOpToString(SpvOp value) {
     case SpvOpCooperativeMatrixStoreHW: return "OpCooperativeMatrixStoreHW";
     case SpvOpCooperativeMatrixMulAddHW: return "OpCooperativeMatrixMulAddHW";
     case SpvOpCooperativeMatrixReduceHW: return "OpCooperativeMatrixReduceHW";
+    case SpvOpTypeCooperativeVectorHW: return "OpTypeCooperativeVectorHW";
+    case SpvOpCooperativeVectorLoadHW: return "OpCooperativeVectorLoadHW";
+    case SpvOpCooperativeVectorStoreHW: return "OpCooperativeVectorStoreHW";
+    case SpvOpCooperativeVectorMatrixMulAddHW: return "OpCooperativeVectorMatrixMulAddHW";
+    case SpvOpCooperativeVectorMatrixMulHW: return "OpCooperativeVectorMatrixMulHW";
     default: return "Unknown";
     }
 }

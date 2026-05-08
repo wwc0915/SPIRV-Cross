@@ -1255,6 +1255,7 @@ enum Capability {
     CapabilityCacheControlsINTEL = 6441,
     CapabilityRegisterLimitsINTEL = 6460,
     CapabilityCooperativeMatrixHW = 6600,
+    CapabilityCooperativeVectorHW = 6607,
     CapabilityMax = 0x7fffffff,
 };
 
@@ -2264,6 +2265,11 @@ enum Op {
     OpCooperativeMatrixStoreHW = 6503,
     OpCooperativeMatrixMulAddHW = 6504,
     OpCooperativeMatrixReduceHW = 6505,
+    OpTypeCooperativeVectorHW = 6608,
+    OpCooperativeVectorLoadHW = 6609,
+    OpCooperativeVectorStoreHW = 6610,
+    OpCooperativeVectorMatrixMulAddHW = 6611,
+    OpCooperativeVectorMatrixMulHW = 6612,
     OpMax = 0x7fffffff,
 };
 
@@ -3040,6 +3046,11 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpCooperativeMatrixStoreHW: *hasResult = false; *hasResultType = false; break;
     case OpCooperativeMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
     case OpCooperativeMatrixReduceHW: *hasResult = true; *hasResultType = true; break;
+    case OpTypeCooperativeVectorHW: *hasResult = true; *hasResultType = false; break;
+    case OpCooperativeVectorLoadHW: *hasResult = true; *hasResultType = true; break;
+    case OpCooperativeVectorStoreHW: *hasResult = false; *hasResultType = false; break;
+    case OpCooperativeVectorMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
+    case OpCooperativeVectorMatrixMulHW: *hasResult = true; *hasResultType = true; break;
     }
 }
 inline const char* SourceLanguageToString(SourceLanguage value) {
@@ -3966,6 +3977,7 @@ inline const char* CapabilityToString(Capability value) {
     case CapabilityCacheControlsINTEL: return "CacheControlsINTEL";
     case CapabilityRegisterLimitsINTEL: return "RegisterLimitsINTEL";
     case CapabilityCooperativeMatrixHW: return "CooperativeMatrixHW";
+    case CapabilityCooperativeVectorHW: return "CooperativeVectorHW";
     default: return "Unknown";
     }
 }
@@ -4891,6 +4903,11 @@ inline const char* OpToString(Op value) {
     case OpCooperativeMatrixStoreHW: return "OpCooperativeMatrixStoreHW";
     case OpCooperativeMatrixMulAddHW: return "OpCooperativeMatrixMulAddHW";
     case OpCooperativeMatrixReduceHW: return "OpCooperativeMatrixReduceHW";
+    case OpTypeCooperativeVectorHW: return "OpTypeCooperativeVectorHW";
+    case OpCooperativeVectorLoadHW: return "OpCooperativeVectorLoadHW";
+    case OpCooperativeVectorStoreHW: return "OpCooperativeVectorStoreHW";
+    case OpCooperativeVectorMatrixMulAddHW: return "OpCooperativeVectorMatrixMulAddHW";
+    case OpCooperativeVectorMatrixMulHW: return "OpCooperativeVectorMatrixMulHW";
     default: return "Unknown";
     }
 }

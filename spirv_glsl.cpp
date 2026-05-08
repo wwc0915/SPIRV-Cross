@@ -6061,6 +6061,43 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c,
 		res += ")";
 		return res;
 	}
+	else if (type.basetype == SPIRType::CoopVecHW)
+	{
+		auto &component_type = get<SPIRType>(type.ext.coopVecHW.component_type_id);
+		string res = type_to_glsl(type) + "(";
+		for (uint32_t i = 0; i < c.vector_size(); i++)
+		{
+			if (i > 0)
+				res += ", ";
+			switch (component_type.basetype)
+			{
+			case SPIRType::Float:
+				res += convert_float_to_string(c, 0, i);
+				break;
+			case SPIRType::Half:
+				res += convert_half_to_string(c, 0, i);
+				break;
+			case SPIRType::Int:
+				res += convert_to_string(c.scalar_i32(0, i));
+				break;
+			case SPIRType::UInt:
+				res += convert_to_string(c.scalar(0, i));
+				break;
+			case SPIRType::Short:
+				res += convert_to_string(c.scalar_i16(0, i));
+				res += backend.int16_t_literal_suffix;
+				break;
+			case SPIRType::UShort:
+				res += convert_to_string(c.scalar_u16(0, i));
+				res += backend.uint16_t_literal_suffix;
+				break;
+			default:
+				SPIRV_CROSS_THROW("Unsupported component type for CoopVecHW constant.");
+			}
+		}
+		res += ")";
+		return res;
+	}
 	else if (c.columns() == 1)
 	{
 		auto res = constant_expression_vector(c, 0);
@@ -13674,7 +13711,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		auto &type = get<SPIRType>(result_type);
 
-		if (type.basetype == SPIRType::CoopMatHW)
+		if (type.basetype == SPIRType::CoopMatHW || type.basetype == SPIRType::CoopVecHW)
 		{
 			auto func = type_to_glsl_constructor(type);
 			emit_unary_func_op(result_type, id, ops[2], func.c_str());
@@ -13699,7 +13736,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t id = ops[1];
 		auto &type = get<SPIRType>(result_type);
 
-		if (type.basetype == SPIRType::CoopMatHW)
+		if (type.basetype == SPIRType::CoopMatHW || type.basetype == SPIRType::CoopVecHW)
 		{
 			auto func = type_to_glsl_constructor(type);
 			emit_unary_func_op(result_type, id, ops[2], func.c_str());
@@ -15474,6 +15511,24 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+	case OpCooperativeVectorLoadHW:
+	{
+		if (length < 3)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorLoadHW.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t ptr = ops[2];
+
+		emit_uninitialized_temporary_expression(result_type, id);
+
+		auto expr = to_expression(ptr);
+		statement("coopVecLoadHW(", to_expression(id), ", ", expr, ");");
+
+		register_read(id, ptr, false);
+		break;
+	}
+
 	case OpCooperativeMatrixMulAddHW:
 	{
 		if (length < 4)
@@ -16389,11 +16444,19 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 
 	case SPIRType::CoopMatHW:
 	{
-		require_extension_internal("GL_HW_neural_shader");
+		require_extension_internal("GL_HW_neural_matrix");
 		auto &component_type = get<SPIRType>(type.ext.coopMatHW.component_type_id);
 		uint32_t rows = get_constant(type.ext.coopMatHW.rows_id).scalar();
 		uint32_t cols = get_constant(type.ext.coopMatHW.cols_id).scalar();
 		return join("coopmatHW<", type_to_glsl(component_type), ", ", rows, "u, ", cols, "u>");
+	}
+
+	case SPIRType::CoopVecHW:
+	{
+		require_extension_internal("GL_HW_cooperative_vector");
+		auto &component_type = get<SPIRType>(type.ext.coopVecHW.component_type_id);
+		uint32_t count = get_constant(type.ext.coopVecHW.component_count_id).scalar();
+		return join("coopvecHW<", type_to_glsl(component_type), ", ", count, "u>");
 	}
 
 	case SPIRType::Void:

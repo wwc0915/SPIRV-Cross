@@ -2,7 +2,7 @@
 
 ## 一、概述
 
-`OpCooperativeMatrixLoadHW` 是 SPV_HW_neural_shader 扩展中的指令，用于从内存加载硬件优化的协作矩阵（Cooperative Matrix）。相比 KHR 标准的 CooperativeMatrixLoad，它增加了对子矩阵区域加载的支持，适用于神经网络推理场景。
+`OpCooperativeMatrixLoadHW` 是 SPV_HW_neural_matrix 扩展中的指令，用于从内存加载硬件优化的协作矩阵（Cooperative Matrix）。相比 KHR 标准的 CooperativeMatrixLoad，它增加了对子矩阵区域加载的支持，适用于神经网络推理场景。
 
 ---
 
@@ -53,7 +53,7 @@ enum CooperativeMatrixLayoutHW {
 ### 3.1 GLSL 扩展声明
 
 ```glsl
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 ```
 
 ### 3.2 GLSL 函数签名
@@ -88,7 +88,7 @@ coopmatHW {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16) in;
 
@@ -123,7 +123,7 @@ OpStore %matA %loaded
 **GLSL 输出** (SPIRV-Cross 生成):
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16) in;
 
@@ -146,7 +146,7 @@ void main() {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16, local_size_y = 4) in;
 
@@ -212,7 +212,7 @@ void main() {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
@@ -257,7 +257,7 @@ void main() {
 **GLSL 输入**:
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(binding = 0) buffer ColMajorMatrix {
     float data[256];  // 16x16 列主序存储
@@ -372,7 +372,7 @@ case OpCooperativeMatrixLoadHW:
 // type_to_glsl() 中的类型名称生成
 if (type.op == OpTypeCooperativeMatrixHW)
 {
-    require_extension_internal("SPV_HW_neural_shader");
+    require_extension_internal("SPV_HW_neural_matrix");
 
     string component_type_str = type_to_glsl(get<SPIRType>(type.ext.coopMatHW.component_type_id));
     string rows = to_expression(type.ext.coopMatHW.rows_id);
@@ -428,7 +428,7 @@ reference/
 **shaders/comp/cooperative-matrix-hw-load.spv16.vk.nocompat.comp**:
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16) in;
 
@@ -453,7 +453,7 @@ void main() {
 **reference/shaders/comp/cooperative-matrix-hw-load.spv16.vk.nocompat.comp.vk**:
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16) in;
 
@@ -486,7 +486,7 @@ void main() {
 
 ## 八、注意事项
 
-1. **扩展依赖**: 需要先声明 `SPV_HW_neural_shader` 扩展
+1. **扩展依赖**: 需要先声明 `SPV_HW_neural_matrix` 扩展
 2. **Vulkan 语义**: 仅在 Vulkan 环境下可用
 3. **内存对齐**: 源数据缓冲区应满足硬件对齐要求
 4. **边界检查**: srcMatrixOffset + 矩阵尺寸不应超出 srcMatrixShape 范围

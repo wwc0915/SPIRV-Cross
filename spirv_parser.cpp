@@ -809,6 +809,23 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
+	case OpTypeCooperativeVectorHW:
+	{
+		uint32_t id = ops[0];
+		auto &type = set<SPIRType>(id, op);
+
+		type.basetype = SPIRType::CoopVecHW;
+		type.op = op;
+		type.ext.coopVecHW.component_type_id = ops[1];
+		type.ext.coopVecHW.component_count_id = ops[2];
+		type.parent_type = ops[1];
+		type.self = id;
+
+		auto &component_type = get<SPIRType>(type.ext.coopVecHW.component_type_id);
+		type.width = component_type.width;
+		break;
+	}
+
 	// Variable declaration
 	// All variables are essentially pointers with a storage qualifier.
 	case OpVariable:

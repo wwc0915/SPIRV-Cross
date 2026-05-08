@@ -2,7 +2,7 @@
 
 ## 一、概述
 
-`OpCooperativeMatrixMulAddHW` 是 SPV_HW_neural_shader 扩展中的算术指令，用于执行硬件优化的矩阵乘加操作。矩阵 A 与矩阵 B 相乘，然后逐元素加上矩阵 C，结果写入累积器矩阵。适用于神经网络推理中的矩阵乘加加速场景。
+`OpCooperativeMatrixMulAddHW` 是 SPV_HW_neural_matrix 扩展中的算术指令，用于执行硬件优化的矩阵乘加操作。矩阵 A 与矩阵 B 相乘，然后逐元素加上矩阵 C，结果写入累积器矩阵。适用于神经网络推理中的矩阵乘加加速场景。
 
 ---
 
@@ -62,7 +62,7 @@ void coopmatMulAddHW(
 
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16, local_size_y = 16) in;
 

@@ -2,7 +2,7 @@
 
 ## 一、概述
 
-`OpCooperativeMatrixReduceHW` 是 SPV_HW_neural_shader 扩展中的规约指令，用于对协作矩阵进行行/列规约计算（Add/Min/Max）。规约结果广播到矩阵的每个元素上。
+`OpCooperativeMatrixReduceHW` 是 SPV_HW_neural_matrix 扩展中的规约指令，用于对协作矩阵进行行/列规约计算（Add/Min/Max）。规约结果广播到矩阵的每个元素上。
 
 ---
 

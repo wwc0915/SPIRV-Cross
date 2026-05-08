@@ -2,7 +2,7 @@
 
 ## 一、概述
 
-`OpCooperativeMatrixStoreHW` 是 SPV_HW_neural_shader 扩展中的指令，用于将硬件优化的协作矩阵（Cooperative Matrix）存储到内存。与 `OpCooperativeMatrixLoadHW` 互为逆操作，支持将矩阵写入到指定内存位置的子区域。
+`OpCooperativeMatrixStoreHW` 是 SPV_HW_neural_matrix 扩展中的指令，用于将硬件优化的协作矩阵（Cooperative Matrix）存储到内存。与 `OpCooperativeMatrixLoadHW` 互为逆操作，支持将矩阵写入到指定内存位置的子区域。
 
 ---
 
@@ -155,7 +155,7 @@ coopMatStoreHW(mat, data._m0[0u], uvec2(64u), uvec2(16u, 32u), gl_CooperativeMat
 **GLSL 场景**:
 ```glsl
 #version 450
-#extension GL_HW_neural_shader : require
+#extension GL_HW_neural_matrix : require
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
