@@ -29,6 +29,8 @@ OpCooperativeMatrixLoadHW = 6603; OpCooperativeMatrixLengthHW = 6602
 OpCooperativeMatrixStoreHW = 6604; OpCooperativeMatrixMulAddHW = 6605
 OpCooperativeMatrixReduceHW = 6606
 OpTypeCooperativeVectorHW = 6608; OpCooperativeVectorLoadHW = 6609
+OpCooperativeVectorStoreHW = 6610; OpCooperativeVectorMatrixMulAddHW = 6611
+OpCooperativeVectorMatrixMulHW = 6612
 OpConvertFToS = 110; OpConvertSToF = 111
 OpConvertFToU = 109; OpConvertUToF = 112
 OpSConvert = 114; OpUConvert = 113; OpFConvert = 115; OpBitcast = 124
@@ -926,6 +928,141 @@ def gen_coopvec_type_test(outfile):
         f.write(bytes(data))
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
+def gen_coopvec_matmuladd_test(outfile):
+    """Generate test for OpCooperativeVectorMatrixMulAddHW: load vec, load bias, muladd, store."""
+    # IDs
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; float_t = 5
+    float_ptr_sb = 6; rtarray_t = 7; block_t = 8; block_ptr_t = 9
+    data_var = 10; label = 11; glsl_id = 12
+    c16 = 13; c0 = 14; c1 = 15; c2 = 16
+    coopvec = 17
+    coopmatA = 18; coopmatB = 19; coopmatAcc = 20
+    ptr_elem = 21; vec_loaded = 22; bias_loaded = 23
+    matA = 24; matB = 25; matC = 26
+    result_matmul = 27; result_muladd = 28
+    v2uint_t = 29; dim16 = 30; dim0 = 31
+
+    BOUND = 32
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1) + inst(OpCapability, 6600) + inst(OpCapability, 6607)
+    sw = str_words("GLSL.std.450")
+    out += word(((1 + len(sw) + 1) << 16) | OpExtInstImport) + word(glsl_id) + b''.join(word(w) for w in sw)
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (data_var, "data"), (float_t, "float"),
+                          (uint_t, "uint"), (vec_loaded, "vec"), (bias_loaded, "bias"),
+                          (result_muladd, "result")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, data_var, DecorationBinding, 0)
+    out += inst(OpDecorate, data_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeFloat, float_t, 32)
+    out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, uint_t, c16, 16)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstant, uint_t, c1, 1)
+    out += inst(OpConstant, uint_t, c2, 2)
+    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16)
+    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpTypeCooperativeVectorHW, coopvec, float_t, c16)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16, c0)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatB, float_t, c16, c16, c1)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatAcc, float_t, c16, c16, c2)
+    out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vec_loaded, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, bias_loaded, ptr_elem)
+    out += inst(OpCooperativeMatrixLoadHW, coopmatA, matA, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixLoadHW, coopmatB, matB, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixLoadHW, coopmatAcc, matC, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeVectorMatrixMulAddHW, coopvec, result_muladd, vec_loaded, matA, bias_loaded)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_muladd)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
+def gen_coopvec_matmul_test(outfile):
+    """Generate test for OpCooperativeVectorMatrixMulHW: load vec, mul, store."""
+    # IDs
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; float_t = 5
+    float_ptr_sb = 6; rtarray_t = 7; block_t = 8; block_ptr_t = 9
+    data_var = 10; label = 11; glsl_id = 12
+    c16 = 13; c0 = 14
+    coopvec = 15; coopmatA = 16
+    ptr_elem = 17; vec_loaded = 18; matA = 19
+    result = 20; v2uint_t = 21; dim16 = 22; dim0 = 23
+
+    BOUND = 24
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1) + inst(OpCapability, 6600) + inst(OpCapability, 6607)
+    sw = str_words("GLSL.std.450")
+    out += word(((1 + len(sw) + 1) << 16) | OpExtInstImport) + word(glsl_id) + b''.join(word(w) for w in sw)
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (data_var, "data"), (float_t, "float"),
+                          (uint_t, "uint"), (vec_loaded, "vec"), (result, "result")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, data_var, DecorationBinding, 0)
+    out += inst(OpDecorate, data_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeFloat, float_t, 32)
+    out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, uint_t, c16, 16)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16)
+    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpTypeCooperativeVectorHW, coopvec, float_t, c16)
+    out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16, c0)
+    out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vec_loaded, ptr_elem)
+    out += inst(OpCooperativeMatrixLoadHW, coopmatA, matA, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeVectorMatrixMulHW, coopvec, result, vec_loaded, matA)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
 if __name__ == '__main__':
     import os
     outfile = sys.argv[1] if len(sys.argv) > 1 else 'test_hw_length.spv'
@@ -942,6 +1079,10 @@ if __name__ == '__main__':
         gen_mul_null_test(outfile)
     elif 'reduce' in base:
         gen_reduce_test(outfile)
+    elif 'coopvec_matmuladd' in base:
+        gen_coopvec_matmuladd_test(outfile)
+    elif 'coopvec_matmul' in base:
+        gen_coopvec_matmul_test(outfile)
     elif 'muladd' in base:
         gen_muladd_test(outfile)
     elif 'mul_' in base or base == 'test_hw_mul.spv':

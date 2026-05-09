@@ -233,6 +233,11 @@ SPV格式：
 | -- | -- | -- | -- | -- | -- | -- |
 | 6+ | 6611 | Result Type \<id\> | Result \<id\> | Vector \<id\> | Matrix \<id\> | Bias \<id\> |
 
+GLSL函数签名：
+```glsl
+void coopVecMatMulAddHW(out coopvecHW m, coopvecHW v, coopmatHW mi, coopvecHW b);
+```
+
 ##### OpCooperativeVectorMatrixMulHW
 协作向量与矩阵相乘（无偏移）。
 
@@ -240,3 +245,8 @@ SPV格式：
 | Word Count | Opcode | \<id\> Result Type | Result \<id\> | \<id\> Vector | \<id\> Matrix |
 | -- | -- | -- | -- | -- | -- |
 | 5+ | 6612 | Result Type \<id\> | Result \<id\> | Vector \<id\> | Matrix \<id\> |
+
+GLSL函数签名：
+```glsl
+void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
+```

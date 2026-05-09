@@ -15561,6 +15561,46 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+	case OpCooperativeVectorMatrixMulAddHW:
+	{
+		if (length < 5)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorMatrixMulAddHW.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t vector = ops[2];
+		uint32_t matrix = ops[3];
+		uint32_t bias = ops[4];
+
+		emit_uninitialized_temporary_expression(result_type, id);
+
+		statement("coopVecMatMulAddHW(", to_expression(id), ", ",
+		          to_expression(vector), ", ",
+		          to_expression(matrix), ", ",
+		          to_expression(bias), ");");
+
+		break;
+	}
+
+	case OpCooperativeVectorMatrixMulHW:
+	{
+		if (length < 4)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorMatrixMulHW.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t vector = ops[2];
+		uint32_t matrix = ops[3];
+
+		emit_uninitialized_temporary_expression(result_type, id);
+
+		statement("coopVecMatMulHW(", to_expression(id), ", ",
+		          to_expression(vector), ", ",
+		          to_expression(matrix), ");");
+
+		break;
+	}
+
 	case OpCooperativeMatrixMulAddHW:
 	{
 		if (length < 4)
