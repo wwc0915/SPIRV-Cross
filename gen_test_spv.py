@@ -22,12 +22,12 @@ OpCapability = 17; OpExtInstImport = 11; OpMemoryModel = 14
 OpEntryPoint = 15; OpExecutionMode = 16; OpName = 5
 OpDecorate = 71; OpMemberDecorate = 72; OpTypeVoid = 19; OpTypeFloat = 22
 OpTypeInt = 21; OpTypeVector = 23; OpTypeFunction = 33; OpTypePointer = 32
-OpTypeStruct = 30; OpTypeRuntimeArray = 29; OpTypeCooperativeMatrixHW = 6501
+OpTypeStruct = 30; OpTypeRuntimeArray = 29; OpTypeCooperativeMatrixHW = 6601
 OpVariable = 59; OpFunction = 54; OpFunctionEnd = 56; OpLabel = 248
 OpReturn = 253; OpConstant = 43; OpConstantComposite = 44; OpConstantNull = 46; OpAccessChain = 65
-OpCooperativeMatrixLoadHW = 6502; OpCooperativeMatrixLengthHW = 6500
-OpCooperativeMatrixStoreHW = 6503; OpCooperativeMatrixMulAddHW = 6504
-OpCooperativeMatrixReduceHW = 6505
+OpCooperativeMatrixLoadHW = 6603; OpCooperativeMatrixLengthHW = 6602
+OpCooperativeMatrixStoreHW = 6604; OpCooperativeMatrixMulAddHW = 6605
+OpCooperativeMatrixReduceHW = 6606
 OpTypeCooperativeVectorHW = 6608; OpCooperativeVectorLoadHW = 6609
 OpConvertFToS = 110; OpConvertSToF = 111
 OpConvertFToU = 109; OpConvertUToF = 112
