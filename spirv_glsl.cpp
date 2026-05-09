@@ -15694,6 +15694,21 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+	case OpCooperativeVectorStoreHW:
+	{
+		if (length < 2)
+			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorStoreHW.");
+
+		uint32_t ptr = ops[0];
+		uint32_t object = ops[1];
+
+		auto expr = to_expression(ptr);
+		statement("coopVecStoreHW(", to_expression(object), ", ", expr, ");");
+
+		register_write(object);
+		break;
+	}
+
 	case OpCompositeConstructReplicateEXT:
 	{
 		uint32_t result_type = ops[0];

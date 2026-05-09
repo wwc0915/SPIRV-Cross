@@ -217,7 +217,7 @@ SPV格式：
 
 GLSL函数签名：
 ```glsl
-void coopVecStoreHW(out coopvecHW<T, M> vec, T buf[]);
+void coopVecStoreHW(coopvecHW<T, M> vec, out T buf[]);
 ```
 
 详细设计文档：
