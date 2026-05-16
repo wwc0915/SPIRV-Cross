@@ -10711,6 +10711,21 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			type_id = type->parent_type;
 			type = &get<SPIRType>(type_id);
 		}
+		// CoopVecHW -> Scalar component
+		else if (type->basetype == SPIRType::CoopVecHW)
+		{
+			expr += "[";
+			if (is_literal)
+				expr += convert_to_string(index);
+			else
+				expr += to_unpacked_expression(index, register_expression_read);
+			expr += "]";
+
+			is_packed = false;
+			physical_type = 0;
+			type_id = type->parent_type;
+			type = &get<SPIRType>(type_id);
+		}
 		// Vector -> Scalar
 		else if (type->vecsize > 1)
 		{
@@ -11324,6 +11339,28 @@ std::pair<std::string, uint32_t> CompilerGLSL::flattened_access_chain_offset(
 					                  "This cannot be flattened. Try using std140 layout instead.");
 				}
 
+				expr += to_enclosed_expression(index, false);
+				expr += " * ";
+				expr += convert_to_string(indexing_stride / word_stride);
+				expr += " + ";
+			}
+
+			type = &get<SPIRType>(type->parent_type);
+		}
+		// CoopVecHW -> Scalar component
+		else if (type->basetype == SPIRType::CoopVecHW)
+		{
+			auto *constant = maybe_get<SPIRConstant>(index);
+			if (constant)
+			{
+				index = evaluate_constant_u32(index);
+				offset += index * (type->width / 8);
+			}
+			else
+			{
+				uint32_t indexing_stride = type->width / 8;
+				if (indexing_stride % word_stride)
+					SPIRV_CROSS_THROW("Stride for CoopVecHW indexing must be divisible by word stride.");
 				expr += to_enclosed_expression(index, false);
 				expr += " * ";
 				expr += convert_to_string(indexing_stride / word_stride);
