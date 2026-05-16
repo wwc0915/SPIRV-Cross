@@ -34,6 +34,11 @@ OpCooperativeVectorMatrixMulHW = 6612
 OpConvertFToS = 110; OpConvertSToF = 111
 OpConvertFToU = 109; OpConvertUToF = 112
 OpSConvert = 114; OpUConvert = 113; OpFConvert = 115; OpBitcast = 124
+OpSNegate = 126; OpFNegate = 127
+OpIAdd = 128; OpFAdd = 129; OpISub = 130; OpFSub = 131
+OpIMul = 132; OpFMul = 133; OpSDiv = 134; OpUDiv = 135; OpFDiv = 136
+OpVectorTimesScalar = 143
+OpExtInst = 12
 OpStore = 62; OpLoad = 61; OpUndef = 1
 
 StorageClassStorageBuffer = 12
@@ -1311,6 +1316,92 @@ def gen_coopvec_bitcast32_test(outfile):
         f.write(bytes(data))
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
+def gen_coopvec_arith_test(outfile):
+    """Generate test for coopvecHW arithmetic: FAdd, FSub, FMul, FNegate, VectorTimesScalar, GLSLstd450 FMin/FMax."""
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; float_t = 5
+    float_ptr_sb = 6; rtarray_t = 7; block_t = 8; block_ptr_t = 9
+    data_var = 10; label = 11; glsl_id = 12
+    c16 = 13; c0 = 14
+    coopvec = 15; ptr_elem = 16
+    vecA = 17; vecB = 18
+    c2f = 19  # float 2.0 constant
+    r_add = 20; r_sub = 21; r_mul = 22; r_neg = 23; r_vts = 24
+    # GLSLstd450 results
+    r_min = 25; r_max = 26; r_fma = 27
+
+    BOUND = 28
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1) + inst(OpCapability, 6607)
+    sw = str_words("GLSL.std.450")
+    out += word(((1 + len(sw) + 1) << 16) | OpExtInstImport) + word(glsl_id) + b''.join(word(w) for w in sw)
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (data_var, "data"), (float_t, "float"), (uint_t, "uint")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, data_var, DecorationBinding, 0)
+    out += inst(OpDecorate, data_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeFloat, float_t, 32)
+    out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, uint_t, c16, 16)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstant, float_t, c2f, 0x40000000)  # 2.0f
+    out += inst(OpTypeCooperativeVectorHW, coopvec, float_t, c16)
+    out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vecA, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vecB, ptr_elem)
+    # FAdd
+    out += inst(OpFAdd, coopvec, r_add, vecA, vecB)
+    # FSub
+    out += inst(OpFSub, coopvec, r_sub, vecA, vecB)
+    # FMul
+    out += inst(OpFMul, coopvec, r_mul, vecA, vecB)
+    # FNegate
+    out += inst(OpFNegate, coopvec, r_neg, vecA)
+    # VectorTimesScalar
+    out += inst(OpVectorTimesScalar, coopvec, r_vts, vecA, c2f)
+    # GLSLstd450 FMin (opcode 37)
+    GLSLstd450FMin = 37
+    out += inst(OpExtInst, coopvec, r_min, glsl_id, GLSLstd450FMin, vecA, vecB)
+    # GLSLstd450 FMax (opcode 40)
+    GLSLstd450FMax = 40
+    out += inst(OpExtInst, coopvec, r_max, glsl_id, GLSLstd450FMax, vecA, vecB)
+    # GLSLstd450 Fma (opcode 50)
+    GLSLstd450Fma = 50
+    out += inst(OpExtInst, coopvec, r_fma, glsl_id, GLSLstd450Fma, vecA, vecB, r_add)
+    # Store results
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_add)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_sub)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_mul)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_neg)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_vts)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_min)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_max)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_fma)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
 if __name__ == '__main__':
     import os
     outfile = sys.argv[1] if len(sys.argv) > 1 else 'test_hw_length.spv'
@@ -1337,6 +1428,8 @@ if __name__ == '__main__':
         gen_coopvec_matmuladd_test(outfile)
     elif 'coopvec_matmul' in base:
         gen_coopvec_matmul_test(outfile)
+    elif 'coopvec_arith' in base:
+        gen_coopvec_arith_test(outfile)
     elif 'muladd' in base:
         gen_muladd_test(outfile)
     elif 'mul_' in base or base == 'test_hw_mul.spv':

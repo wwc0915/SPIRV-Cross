@@ -257,3 +257,23 @@ void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 
 详细设计文档：
 - [CoopVecHW 转换指令与 OpBitcast 设计文档](op-cooperative-vector-convert-hw-design.md)
+#### 3.2.5 算术指令
+允许写作向量类型用于以下算术指令：
++ OpSNegate and OpFNegate
++ OpIAdd, OpFAdd, OpISub, OpFSub, OpFMul, OpIMul, OpFDiv, OpSDiv, and OpUDiv
+
+如果它们的Component类型合适：
++ OpF指令可用于分量类型为浮点类型的协作向量类型
++ OpI、OpS和OpU指令可用于分量类型为整数类型的协作向量类型
+
+一元算术指令对协作向量的各个元素进行操作
+
+二元算术指令对一对类型必须匹配的协作向量的各个元素进行操作
+
+允许将浮点协作向量类型用于OpVectorTimesScalar
+
+允许协作向量类型用于以下GLSL.std.450扩展指令集指令，如果它们的Component类型合适
++ FMin, UMin, SMin, NMin, FMax, UMax, SMax, NMax, FClamp, UClamp, SClamp, NClamp, Step, Exp, Log, Tanh, Atan, and Fma
+
+详细设计文档：
+- [CoopVecHW 算术指令设计文档](op-cooperative-vector-arithmetic-hw-design.md)
