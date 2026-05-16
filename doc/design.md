@@ -277,3 +277,9 @@ void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 
 详细设计文档：
 - [CoopVecHW 算术指令设计文档](op-cooperative-vector-arithmetic-hw-design.md)
+#### 3.2.6 Bit指令
+允许协作向量类型用于以下位操作指令：
++ OpShiftRightLogical, OpShiftRightArithmetic, OpShiftLeftLogical, OpBitwiseOr, OpBitwiseXor, OpBitwiseAnd, and OpNot
+
+详细设计文档：
+- [CoopVecHW 位操作指令设计文档](op-cooperative-vector-bit-hw-design.md)
