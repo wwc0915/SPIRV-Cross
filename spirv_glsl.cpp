@@ -13801,13 +13801,21 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t id = ops[1];
 		uint32_t arg = ops[2];
 
-		if (get<SPIRType>(result_type).basetype == SPIRType::CoopMatHW)
+		if (get<SPIRType>(result_type).basetype == SPIRType::CoopMatHW ||
+		    get<SPIRType>(result_type).basetype == SPIRType::CoopVecHW)
 		{
 			auto &arg_type = expression_type(arg);
-			if (arg_type.basetype == SPIRType::CoopMatHW)
+			if (arg_type.basetype == SPIRType::CoopMatHW || arg_type.basetype == SPIRType::CoopVecHW)
 			{
-				auto &out_component = get<SPIRType>(get<SPIRType>(result_type).ext.coopMatHW.component_type_id);
-				auto &in_component = get<SPIRType>(arg_type.ext.coopMatHW.component_type_id);
+				const SPIRType &out_type = get<SPIRType>(result_type);
+				const SPIRType &out_component = get<SPIRType>(
+					out_type.basetype == SPIRType::CoopMatHW
+						? out_type.ext.coopMatHW.component_type_id
+						: out_type.ext.coopVecHW.component_type_id);
+				const SPIRType &in_component = get<SPIRType>(
+					arg_type.basetype == SPIRType::CoopMatHW
+						? arg_type.ext.coopMatHW.component_type_id
+						: arg_type.ext.coopVecHW.component_type_id);
 				auto op = bitcast_glsl_op(out_component, in_component);
 				if (!op.empty())
 				{

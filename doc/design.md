@@ -250,3 +250,10 @@ GLSL函数签名：
 ```glsl
 void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 ```
+#### 3.2.4 转换指令
+允许协作向量类型用于以下转换指令(如果分量类型合适): OpConvertFToU、OpConvertFToS、OpConvertSToF、OpConvertUToF、OpUConvert、OpSConvert、OpFConvert。结果类型和值类型必须具有相同的分量数量。
+
+允许协作向量类型用于OpBitcast。结果类型和值类型必须具有相同的分量数量以及每个分量的相同位数。
+
+详细设计文档：
+- [CoopVecHW 转换指令与 OpBitcast 设计文档](op-cooperative-vector-convert-hw-design.md)
