@@ -2265,6 +2265,12 @@ enum Op {
     OpCooperativeMatrixStoreHW = 6604,
     OpCooperativeMatrixMulAddHW = 6605,
     OpCooperativeMatrixReduceHW = 6606,
+    OpTypeTensorMap = 6466,
+    OpCpAsyncTensorGlobalShared = 6470,
+    OpCpAsyncCommitGroup = 6474,
+    OpCpAsyncWaitGroup = 6475,
+    OpBarrierArrive = 6476,
+    OpBarrierWait = 6477,
     OpTypeCooperativeVectorHW = 6608,
     OpCooperativeVectorLoadHW = 6609,
     OpCooperativeVectorStoreHW = 6610,
@@ -3051,6 +3057,12 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpCooperativeVectorStoreHW: *hasResult = false; *hasResultType = false; break;
     case OpCooperativeVectorMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
     case OpCooperativeVectorMatrixMulHW: *hasResult = true; *hasResultType = true; break;
+    case OpTypeTensorMap: *hasResult = true; *hasResultType = false; break;
+    case OpCpAsyncTensorGlobalShared: *hasResult = false; *hasResultType = false; break;
+    case OpCpAsyncCommitGroup: *hasResult = false; *hasResultType = false; break;
+    case OpCpAsyncWaitGroup: *hasResult = false; *hasResultType = false; break;
+    case OpBarrierArrive: *hasResult = false; *hasResultType = false; break;
+    case OpBarrierWait: *hasResult = false; *hasResultType = false; break;
     }
 }
 inline const char* SourceLanguageToString(SourceLanguage value) {
@@ -4908,6 +4920,12 @@ inline const char* OpToString(Op value) {
     case OpCooperativeVectorStoreHW: return "OpCooperativeVectorStoreHW";
     case OpCooperativeVectorMatrixMulAddHW: return "OpCooperativeVectorMatrixMulAddHW";
     case OpCooperativeVectorMatrixMulHW: return "OpCooperativeVectorMatrixMulHW";
+    case OpTypeTensorMap: return "OpTypeTensorMap";
+    case OpCpAsyncTensorGlobalShared: return "OpCpAsyncTensorGlobalShared";
+    case OpCpAsyncCommitGroup: return "OpCpAsyncCommitGroup";
+    case OpCpAsyncWaitGroup: return "OpCpAsyncWaitGroup";
+    case OpBarrierArrive: return "OpBarrierArrive";
+    case OpBarrierWait: return "OpBarrierWait";
     default: return "Unknown";
     }
 }

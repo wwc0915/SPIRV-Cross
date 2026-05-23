@@ -43,6 +43,9 @@ OpShiftRightLogical = 194; OpShiftRightArithmetic = 195; OpShiftLeftLogical = 19
 OpBitwiseOr = 197; OpBitwiseXor = 198; OpBitwiseAnd = 199; OpNot = 200
 OpStore = 62; OpLoad = 61; OpUndef = 1
 OpCompositeExtract = 81; OpCompositeInsert = 82
+OpTypeTensorMap = 6466; OpCpAsyncTensorGlobalShared = 6470
+OpCpAsyncCommitGroup = 6474; OpCpAsyncWaitGroup = 6475
+OpBarrierArrive = 6476; OpBarrierWait = 6477
 
 StorageClassStorageBuffer = 12
 DecorationBlock = 2; DecorationBinding = 33; DecorationDescriptorSet = 34
@@ -1552,6 +1555,104 @@ def gen_coopvec_index_test(outfile):
         f.write(bytes(data))
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
+def gen_cp_async_test(outfile):
+    """Generate test for cp-async intrinsics and TensorMap types."""
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; int_t = 5
+    int_ptr_sb = 6; rtarray_t = 7; block_t = 8; block_ptr_t = 9
+    data_var = 10; label = 11
+    c16 = 12; c0 = 13; c1 = 14
+    ptr_elem = 15
+    # TensorMap types: 1D, 2D
+    tmap1d = 16; tmap2d = 17
+    # TensorMap pointer types (Function storage)
+    tmap1d_ptr = 18; tmap2d_ptr = 19
+    tmap1d_var = 20; tmap2d_var = 21
+    # shared memory pointer type
+    shared_ptr = 22; shared_var = 23
+    # int vectors for coords
+    ivec2_t = 24
+    c0_vec2 = 25
+    # barrier constants
+    barrier_id = 26; barrier_n = 27; wait_n = 28
+
+    BOUND = 29
+
+    StorageClassWorkgroup = 4
+    StorageClassFunction = 7
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1)  # Shader
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (data_var, "data"), (int_t, "int"), (uint_t, "uint")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, data_var, DecorationBinding, 0)
+    out += inst(OpDecorate, data_var, DecorationDescriptorSet, 0)
+    # Types
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeInt, int_t, 32, 1)   # signed int
+    out += inst(OpTypeInt, uint_t, 32, 0)  # unsigned int
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, int_ptr_sb, StorageClassStorageBuffer, int_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, int_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    # Vector types for coords
+    out += inst(OpTypeVector, ivec2_t, int_t, 2)
+    # TensorMap types (dimensions = 1, 2)
+    out += inst(OpTypeTensorMap, tmap1d, 1)
+    out += inst(OpTypeTensorMap, tmap2d, 2)
+    # Pointer to TensorMap (Function storage for local vars)
+    out += inst(OpTypePointer, tmap1d_ptr, StorageClassFunction, tmap1d)
+    out += inst(OpTypePointer, tmap2d_ptr, StorageClassFunction, tmap2d)
+    # Shared memory
+    out += inst(OpTypePointer, shared_ptr, StorageClassWorkgroup, int_t)
+    # Constants
+    out += inst(OpConstant, uint_t, c16, 16)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstant, int_t, c1, 1)
+    out += inst(OpConstant, int_t, barrier_id, 0)
+    out += inst(OpConstant, int_t, barrier_n, 1)
+    out += inst(OpConstant, int_t, wait_n, 0)
+    # ivec2 constant (0,0)
+    out += inst(OpConstantComposite, ivec2_t, c0_vec2, c0, c0)
+    # Variables (module scope)
+    out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
+    out += inst(OpVariable, shared_ptr, shared_var, StorageClassWorkgroup)
+    # Function
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    # Function-scope variables (must be in first block)
+    out += inst(OpVariable, tmap1d_ptr, tmap1d_var, StorageClassFunction)
+    out += inst(OpVariable, tmap2d_ptr, tmap2d_var, StorageClassFunction)
+    out += inst(OpAccessChain, int_ptr_sb, ptr_elem, data_var, c0, c0)
+    # cp_async_tensor_global_shared with 1D tensor
+    out += inst(OpCpAsyncTensorGlobalShared, ptr_elem, tmap1d_var, c0)
+    # cp_async_tensor_global_shared with 2D tensor
+    out += inst(OpCpAsyncTensorGlobalShared, ptr_elem, tmap2d_var, c0_vec2)
+    # cp_async_commit_group
+    out += inst(OpCpAsyncCommitGroup)
+    # cp_async_wait_group
+    out += inst(OpCpAsyncWaitGroup, wait_n)
+    # barrier_arrive
+    out += inst(OpBarrierArrive, barrier_id, barrier_n)
+    # barrier_wait
+    out += inst(OpBarrierWait, barrier_id, barrier_n)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
 if __name__ == '__main__':
     import os
     outfile = sys.argv[1] if len(sys.argv) > 1 else 'test_hw_length.spv'
@@ -1584,6 +1685,8 @@ if __name__ == '__main__':
         gen_coopvec_bit_test(outfile)
     elif 'coopvec_index' in base:
         gen_coopvec_index_test(outfile)
+    elif 'cp_async' in base:
+        gen_cp_async_test(outfile)
     elif 'muladd' in base:
         gen_muladd_test(outfile)
     elif 'mul_' in base or base == 'test_hw_mul.spv':

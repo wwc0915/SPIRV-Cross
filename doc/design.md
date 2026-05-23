@@ -283,3 +283,20 @@ void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 
 详细设计文档：
 - [CoopVecHW 位操作指令设计文档](op-cooperative-vector-bit-hw-design.md)
+## cp-async
+需要新增的intrinsic
+| glsl | spv |
+| -- | -- |
+| void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap1D tensorSharp, int coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap2D tensorSharp, ivec2 coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap3D tensorSharp, ivec3 coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap4D tensorSharp, ivec4 coord); | OpCpAsyncTensorGlobalShared = 6470 |
+| void cp_async_commit_group(); | OpCpAsyncCommitGroup = 6474 |
+| void cp_async_wait_group(int N); | OpCpAsyncWaitGroup = 6475 |
+| void barrier_arrive(int id, int n); | OpBarrierArrive = 6476 |
+| void barrier_wait(int id, int n); | OpBarrierWait = 6477 |
+
+需要新增的变量类型
+| glsl | spv |
+| -- | -- |
+| tensorMap1D<br>tensorMap2D<br>tensorMap3D<br>tensorMap4D | OpTypeTensorMap = 6466 |
+
+详细设计文档：
+- [CpAsync 与 TensorMap 设计文档](cp-async-design.md)

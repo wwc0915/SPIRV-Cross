@@ -15754,6 +15754,58 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
+	case OpCpAsyncTensorGlobalShared:
+	{
+		if (length < 3)
+			SPIRV_CROSS_THROW("Not enough operands for OpCpAsyncTensorGlobalShared.");
+
+		uint32_t dst_ptr = ops[0];
+		uint32_t tensor_map = ops[1];
+		uint32_t coord = ops[2];
+
+		statement("cp_async_tensor_global_shared(", to_expression(dst_ptr), ", ",
+		          to_expression(tensor_map), ", ", to_expression(coord), ");");
+		break;
+	}
+
+	case OpCpAsyncCommitGroup:
+	{
+		statement("cp_async_commit_group();");
+		break;
+	}
+
+	case OpCpAsyncWaitGroup:
+	{
+		if (length < 1)
+			SPIRV_CROSS_THROW("Not enough operands for OpCpAsyncWaitGroup.");
+
+		uint32_t n = ops[0];
+		statement("cp_async_wait_group(", to_expression(n), ");");
+		break;
+	}
+
+	case OpBarrierArrive:
+	{
+		if (length < 2)
+			SPIRV_CROSS_THROW("Not enough operands for OpBarrierArrive.");
+
+		uint32_t barrier_id = ops[0];
+		uint32_t barrier_n = ops[1];
+		statement("barrier_arrive(", to_expression(barrier_id), ", ", to_expression(barrier_n), ");");
+		break;
+	}
+
+	case OpBarrierWait:
+	{
+		if (length < 2)
+			SPIRV_CROSS_THROW("Not enough operands for OpBarrierWait.");
+
+		uint32_t barrier_id = ops[0];
+		uint32_t barrier_n = ops[1];
+		statement("barrier_wait(", to_expression(barrier_id), ", ", to_expression(barrier_n), ");");
+		break;
+	}
+
 	case OpCompositeConstructReplicateEXT:
 	{
 		uint32_t result_type = ops[0];
@@ -16635,6 +16687,9 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		uint32_t count = get_constant(type.ext.coopVecHW.component_count_id).scalar();
 		return join("coopvecHW<", type_to_glsl(component_type), ", ", count, "u>");
 	}
+
+	case SPIRType::TensorMap:
+		return join("tensorMap", type.ext.tensorMap.dimensions, "D");
 
 	case SPIRType::Void:
 		return "void";

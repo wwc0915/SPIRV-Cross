@@ -2263,6 +2263,12 @@ typedef enum SpvOp_ {
     SpvOpGroupLogicalXorKHR = 6408,
     SpvOpMaskedGatherINTEL = 6428,
     SpvOpMaskedScatterINTEL = 6429,
+    SpvOpTypeTensorMap = 6466,
+    SpvOpCpAsyncTensorGlobalShared = 6470,
+    SpvOpCpAsyncCommitGroup = 6474,
+    SpvOpCpAsyncWaitGroup = 6475,
+    SpvOpBarrierArrive = 6476,
+    SpvOpBarrierWait = 6477,
     SpvOpCooperativeMatrixLengthHW = 6602,
     SpvOpTypeCooperativeMatrixHW = 6601,
     SpvOpCooperativeMatrixLoadHW = 6603,
@@ -3055,6 +3061,12 @@ inline void SpvHasResultAndType(SpvOp opcode, bool *hasResult, bool *hasResultTy
     case SpvOpCooperativeVectorStoreHW: *hasResult = false; *hasResultType = false; break;
     case SpvOpCooperativeVectorMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
     case SpvOpCooperativeVectorMatrixMulHW: *hasResult = true; *hasResultType = true; break;
+    case SpvOpTypeTensorMap: *hasResult = true; *hasResultType = false; break;
+    case SpvOpCpAsyncTensorGlobalShared: *hasResult = false; *hasResultType = false; break;
+    case SpvOpCpAsyncCommitGroup: *hasResult = false; *hasResultType = false; break;
+    case SpvOpCpAsyncWaitGroup: *hasResult = false; *hasResultType = false; break;
+    case SpvOpBarrierArrive: *hasResult = false; *hasResultType = false; break;
+    case SpvOpBarrierWait: *hasResult = false; *hasResultType = false; break;
     }
 }
 inline const char* SpvSourceLanguageToString(SpvSourceLanguage value) {
@@ -4912,6 +4924,12 @@ inline const char* SpvOpToString(SpvOp value) {
     case SpvOpCooperativeVectorStoreHW: return "OpCooperativeVectorStoreHW";
     case SpvOpCooperativeVectorMatrixMulAddHW: return "OpCooperativeVectorMatrixMulAddHW";
     case SpvOpCooperativeVectorMatrixMulHW: return "OpCooperativeVectorMatrixMulHW";
+    case SpvOpTypeTensorMap: return "OpTypeTensorMap";
+    case SpvOpCpAsyncTensorGlobalShared: return "OpCpAsyncTensorGlobalShared";
+    case SpvOpCpAsyncCommitGroup: return "OpCpAsyncCommitGroup";
+    case SpvOpCpAsyncWaitGroup: return "OpCpAsyncWaitGroup";
+    case SpvOpBarrierArrive: return "OpBarrierArrive";
+    case SpvOpBarrierWait: return "OpBarrierWait";
     default: return "Unknown";
     }
 }

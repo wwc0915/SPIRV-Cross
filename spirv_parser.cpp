@@ -826,6 +826,18 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
+	case OpTypeTensorMap:
+	{
+		uint32_t id = ops[0];
+		auto &type = set<SPIRType>(id, op);
+
+		type.basetype = SPIRType::TensorMap;
+		type.op = op;
+		type.ext.tensorMap.dimensions = ops[1];
+		type.self = id;
+		break;
+	}
+
 	// Variable declaration
 	// All variables are essentially pointers with a storage qualifier.
 	case OpVariable:
