@@ -800,7 +800,8 @@ void Parser::parse(const Instruction &instruction)
 		type.ext.coopMatHW.component_type_id = ops[1];
 		type.ext.coopMatHW.rows_id = ops[2];
 		type.ext.coopMatHW.cols_id = ops[3];
-		type.ext.coopMatHW.use_id = ops[4];
+		// use is an optional operand, reference VK_KHR_cooperative_matrix extension
+		type.ext.coopMatHW.use_id = (length > 4) ? ops[4] : 0;
 		type.parent_type = ops[1];
 		type.self = id;
 

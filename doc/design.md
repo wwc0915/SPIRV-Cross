@@ -30,11 +30,33 @@ Cooperative Matrix Reduce CombineOp:
 6604-OpCooperativeMatrixStoreHW
 6605-OpCooperativeMatrixMulAddHW
 6606-OpCooperativeMatrixReduceHW
+
+CooperativeMatrixUse (可选，用于glslang校验):
+0-MatrixUseA
+1-MatrixUseB
+2-MatrixUseAccumulator
 ```
 `Word Count + Opcode + Results + Operands`
 1. word0的高16位是word count，表示总字数；word0的低16为opcode
 2. 当存在时，Results是由指令创建的Result\<id\>或者Result Type，每个Result\<id\>始终为32位
 3. 当存在时，Operands是由指令所使用的任何字面量、其他指令的Result\<id\>等。每个操作数始终为32位
+
+#### 2.2.0 类型定义指令
+`OpTypeCooperativeMatrixHW`
+声明一个硬件协作矩阵类型。
+
+| 5+ | opcode: 6601 | Result \<id\> | \<id\> Component Type | \<id\> Rows | \<id\> Cols | \<id\> Use (可选) |
+| -- | -- | -- | -- | -- | -- | -- |
+
++ Component Type: 矩阵元素类型，必须是标量数值类型
++ Rows: 矩阵行数，必须是常量
++ Cols: 矩阵列数，必须是常量
++ Use (可选): CooperativeMatrixUse 枚举值，用于 glslang 校验，不影响 GLSL 输出。参考 VK_KHR_cooperative_matrix 扩展
+
+GLSL类型声明：
+```
+coopmatHW<T, M, K>
+```
 
 #### 2.2.1 杂项指令
 `OpCooperativeMatrixLengthHW`

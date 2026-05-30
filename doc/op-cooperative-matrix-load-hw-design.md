@@ -325,7 +325,8 @@ case OpTypeCooperativeMatrixHW:
     type.ext.coopMatHW.component_type_id = ops[1];  // 组件类型
     type.ext.coopMatHW.rows_id = ops[2];            // 行数
     type.ext.coopMatHW.cols_id = ops[3];            // 列数
-    type.ext.coopMatHW.use_id = ops[4];             // 用途
+    // use is an optional operand, reference VK_KHR_cooperative_matrix extension
+    type.ext.coopMatHW.use_id = (length > 4) ? ops[4] : 0;  // 用途（可选）
 
     // 设置父类型和位宽
     type.parent_type = ops[1];
