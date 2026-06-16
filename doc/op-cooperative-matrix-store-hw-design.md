@@ -12,40 +12,42 @@
 
 | 字段 | 值 |
 |------|-----|
-| Opcode | 6503 |
-| Word Count | 4+vars |
+| Opcode | 6604 |
+| Word Count | 7+vars |
 | hasResult | false |
 | hasResultType | false |
 
 **指令格式**:
 ```
-| Word Count | Opcode: 6503 | <id> Pointer | <id> Object | <id> srcMatrixShape | <id> srcMatrixOffset | <id> layout |
+| Word Count | Opcode: 6604 | <id> Object | <id> Pointer | <id> srcMatrixShape | <id> srcMatrixOffset | <id> layout | <id> Memory Operands/Operand (可选) |
 ```
 
 ### 2.2 操作数说明
 
 | 操作数 | 位置 | 描述 |
 |--------|------|------|
-| Pointer | ops[0] | 指向标量/向量数组的指针 (`OpTypePointer`)，其类型操作数可以是标量或向量类型。如果声明了着色器功能，则指针必须指向一个数组，且对指针的任何 `ArrayStride` 修饰符都将被忽略 |
-| Object | ops[1] | 要存储的合作矩阵，其类型必须是 `OpTypeCooperativeMatrixHW` |
-| srcMatrixShape | ops[2] | vec2，要写出到 ddr/sharedMemory 的矩阵的行数和列数 |
-| srcMatrixOffset | ops[3] | vec2，从目标矩阵第 srcMatrixOffset[0] 行、第 srcMatrixOffset[1] 列开始写入 |
+| Object | ops[0] | 要存储的合作矩阵，其类型必须是 `OpTypeCooperativeMatrixHW` |
+| Pointer | ops[1] | 指向标量/向量数组的指针 (`OpTypePointer`)，其类型操作数可以是标量或向量类型。如果声明了着色器功能，则指针必须指向一个数组，且对指针的任何 `ArrayStride` 修饰符都将被忽略 |
+| srcMatrixShape | ops[2] | ivec2，要写出到 ddr/sharedMemory 的矩阵的行数和列数 |
+| srcMatrixOffset | ops[3] | ivec2，从目标矩阵第 srcMatrixOffset[0] 行、第 srcMatrixOffset[1] 列开始写入 |
 | layout | ops[4] | `CooperativeMatrixLayoutHW` 枚举常量 (0=RowMajorHW, 1=ColumnMajorHW) |
+| Memory Operands/Operand | ops[5] (可选) | SPIR-V 内存操作数，可选，不影响 GLSL 输出 |
 
 ---
 
 ## 三、与 LoadHW 的对比
 
-| 特性 | LoadHW (6502) | StoreHW (6503) |
+| 特性 | LoadHW (6603) | StoreHW (6604) |
 |------|---------------|----------------|
 | Result | 有 (返回加载的矩阵) | 无 |
 | Result Type | ops[0] | 无 |
-| Pointer | ops[2] | ops[0] |
-| Object | 无 | ops[1] |
+| Object | 无 | ops[0] |
+| Pointer | ops[2] | ops[1] |
 | srcMatrixShape | ops[3] | ops[2] |
 | srcMatrixOffset | ops[4] | ops[3] |
 | layout | ops[5] | ops[4] |
-| Word Count | 5+vars | 4+vars |
+| Memory Operands (可选) | ops[6] | ops[5] |
+| Word Count | 7+vars | 7+vars |
 | 数据流 | 内存 -> 矩阵 | 矩阵 -> 内存 |
 
 ---
@@ -56,11 +58,11 @@
 
 ```glsl
 void coopMatStoreHW(
-    coopmatHW<T, M, K> mat,           // 输入矩阵
-    T buf[],                           // 目标数据缓冲区
-    uvec2 srcMatrixShape,             // 目标矩阵形状 (rows, cols)
-    uvec2 srcMatrixOffset,            // 写入偏移 (row_offset, col_offset)
-    uint layout                        // 布局方式
+    coopmatHW<T, M, K> m,               // 输入矩阵（要存储的对象）
+    volatile coherent ArrayElemTy[] buf,// 目标数据缓冲区
+    ivec2 srcMatrixShape,               // 目标矩阵形状 (rows, cols)
+    ivec2 srcMatrixOffset,              // 写入偏移 (row_offset, col_offset)
+    MatrixLayout layout                 // 布局方式
 );
 ```
 
@@ -96,8 +98,8 @@ case OpCooperativeMatrixStoreHW:
     if (length < 5)
         SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixStoreHW.");
 
-    uint32_t ptr = ops[0];
-    uint32_t object = ops[1];
+    uint32_t object = ops[0];
+    uint32_t ptr = ops[1];
     uint32_t src_shape = ops[2];
     uint32_t src_offset = ops[3];
     uint32_t layout_id = ops[4];
@@ -126,7 +128,7 @@ case OpCooperativeMatrixStoreHW:
 **SPIR-V 输入** (通过 gen_test_spv.py `gen_store_test` 生成):
 ```
 %matA = OpCooperativeMatrixLoadHW %coopmatA_t %ptr %dim16 %dim0 %c0
-OpCooperativeMatrixStoreHW %ptr %matA %dim16 %dim0 %c0
+OpCooperativeMatrixStoreHW %matA %ptr %dim16 %dim0 %c0
 ```
 
 **期望 GLSL 输出**:

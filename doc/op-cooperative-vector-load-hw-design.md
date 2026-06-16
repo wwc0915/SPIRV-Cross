@@ -13,11 +13,11 @@
 | 字段 | 值 |
 |------|-----|
 | Opcode | 6609 |
-| Word Count | 4+ |
+| Word Count | 5+ |
 
 **指令格式**:
 ```
-| Word Count | Opcode: 6609 | <id> Result Type | Result <id> | <id> Pointer |
+| Word Count | Opcode: 6609 | <id> Result Type | Result <id> | <id> Pointer | <id> Offset | Memory Operands (可选) |
 ```
 
 ### 2.2 操作数说明
@@ -27,6 +27,8 @@
 | Result Type | `<id>` | 结果类型，必须是 `OpTypeCooperativeVectorHW` 类型 |
 | Result `<id>` | `<id>` | 加载结果的协作向量 ID |
 | Pointer | `<id>` | 指向标量/向量元素类型数组的指针 (`OpTypePointer`)，存储类别必须是 CrossWorkGroup、Workgroup、StorageBuffer 或 PhysicalStorageBuffer |
+| Offset | `<id>` | 从 buf 起始位置的字节偏移，类型为 32 位整数标量 |
+| Memory Operands (可选) | `<id>` | SPIR-V 内存操作数，可选，不影响 GLSL 输出 |
 
 ### 2.3 关联枚举定义
 
@@ -48,8 +50,10 @@ CapabilityCooperativeVectorHW = 6607
 ### 3.2 GLSL 函数签名
 
 ```glsl
-void coopVecLoadHW(out coopvecHW<T, M> vec, T buf[]);
+void coopVecLoadHW(out coopvecHW<T, M> v, volatile coherent ArrayElemTy[] buf, uint offset);
 ```
+
+`ArrayElemTy` 可以是任意标量或向量类型，当前数据类型 T 可支持：s8, s16, s32, fp16 和 fp32。协作向量从内存（从 buf 起始位置的 offset 字节偏移处开始）加载 N 个数据类型为 T 的数据到寄存器，不执行任何转换操作。
 
 ---
 
@@ -87,7 +91,7 @@ layout(binding = 0) buffer VecData {
 
 void main() {
     coopvecHW<float, 16u> vec;
-    coopVecLoadHW(vec, data._m0[0u]);
+    coopVecLoadHW(vec, data._m0[0u], 0u);
 }
 ```
 
@@ -116,17 +120,18 @@ void main() {
 // emit_instruction() 中的处理
 case OpCooperativeVectorLoadHW:
 {
-    if (length < 3)
+    if (length < 4)
         SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorLoadHW.");
 
     uint32_t result_type = ops[0];
     uint32_t id = ops[1];
     uint32_t ptr = ops[2];
+    uint32_t offset = ops[3];
 
     emit_uninitialized_temporary_expression(result_type, id);
 
     auto expr = to_expression(ptr);
-    statement("coopVecLoadHW(", to_expression(id), ", ", expr, ");");
+    statement("coopVecLoadHW(", to_expression(id), ", ", expr, ", ", to_expression(offset), ");");
 
     register_read(id, ptr, false);
     break;

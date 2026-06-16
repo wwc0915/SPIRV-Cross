@@ -45,12 +45,12 @@ CooperativeMatrixUse (可选，用于glslang校验):
 `OpTypeCooperativeMatrixHW`
 声明一个硬件协作矩阵类型。
 
-| 5+ | opcode: 6601 | Result \<id\> | \<id\> Component Type | \<id\> Rows | \<id\> Cols | \<id\> Use (可选) |
+| 5 | opcode: 6601 | Result \<id\> | \<id\> Component Type | \<id\> Rows | \<id\> Cols | \<id\> Use (可选) |
 | -- | -- | -- | -- | -- | -- | -- |
 
 + Component Type: 矩阵元素类型，必须是标量数值类型
-+ Rows: 矩阵行数，必须是常量
-+ Cols: 矩阵列数，必须是常量
++ Rows: 矩阵行数，必须是32位整数类型的标量常量
++ Cols: 矩阵列数，必须是32位整数类型的标量常量
 + Use (可选): CooperativeMatrixUse 枚举值，用于 glslang 校验，不影响 GLSL 输出。参考 VK_KHR_cooperative_matrix 扩展
 
 GLSL类型声明：
@@ -64,7 +64,7 @@ coopmatHW<T, M, K>
 | 4 | opcode: 6602 | \<id\> Result Type | Result \<id\> | \<id\> Type
 | -- | -- | -- | -- | -- |
 + Type 必须是 cooperative matrix 类型
-+ Result Type 必须是 OpTypeInt
++ Result Type 必须是具有32位宽度和0符号性的 OpTypeInt
 
 GLSL实现：
 ```
@@ -74,8 +74,8 @@ SPIRV-Cross通过SPIRExpression生成内联表达式，无需额外变量声明�
 #### 2.2.4 内存指令
 1. `OpCooperativeMatrixLoadHW`
 
-| 5+vars | opcode: 6603 | \<id\> Result Type | Result \<id\>| \<id\> Pointer | \<id\> srcMatrixShape | \<id\> srcMatrixOffset | \<id\> layout |
-| -- | -- | -- | -- | -- | -- | -- | -- |
+| 7+vars | opcode: 6603 | \<id\> Result Type | Result \<id\>| \<id\> Pointer | \<id\> srcMatrixShape | \<id\> srcMatrixOffset | \<id\> layout | \<id\> Memory Operands/Operand (可选) |
+| -- | -- | -- | -- | -- | -- | -- | -- | -- |
 
 通过指针load一个cooperative matrix
 + Result Type是load对象的类型，它必须是coop mat类型
@@ -85,12 +85,14 @@ SPIRV-Cross通过SPIRExpression生成内联表达式，无需额外变量声明�
 + layout是Cooperative Matrix Layout，即读入矩阵的我排布方式
 
 ```
-void coopMatLoadHW(coopmatHW<T, M, K> matA, T buf[], vec2 srcMatrixShape, vec2 srcMatrixOffset, MatrixLayout layout)
+void coopMatLoadHW(out coopmatHW<T, M, K> m, volatile coherent ArrayElemTy[]  buf, ivec2 srcMatrixShape, ivec2 srcMatrixOffset, MatrixLayout layout)
 ```
+ArrayElemTy可以是任意标量或向量类型，当前数据类型T可支持：s8,s16,s32,fp16和fp32
+
 2. `OpCooperativeMatrixStoreHW`
 
-| 4+vars | opcode: 6604 | \<id\> Pointer | \<id\> Object | \<id\> srcMatrixShape | \<id\> srcMatrixOffset | \<id\> layout |
-| -- | -- | -- | -- | -- | -- | -- |
+| 7+vars | opcode: 6604 | \<id\> Object | \<id\> Pointer | \<id\> srcMatrixShape | \<id\> srcMatrixOffset | \<id\> layout | \<id\> Memory Operands/Operand (可选) |
+| -- | -- | -- | -- | -- | -- | -- | -- |
 
 通过指针store一个coopmat
 + Pointer是一个指针，其类型必须是OpTypePointer，其类型操作数可以是标量或者向量类型。如果声明了着色器功能，则指针必须指向一个数组，且对指针的任何ArrayStride修饰符都将被忽略
@@ -100,8 +102,9 @@ void coopMatLoadHW(coopmatHW<T, M, K> matA, T buf[], vec2 srcMatrixShape, vec2 s
 + layout是读入矩阵的排布方式，其值取自Cooperative Matrix Layout属性
 
 ```
-void coopMatStoreHW(coopmatHW<T, M, K> matA, T buf[], vec2 srcMatrixShape, vec2 srcMatrixOffset, MatrixLayour layout)
+void coopMatStoreHW(coopmatHW<T, M, K> m, volatile coherent ArrayElemTy[] buf, ivec2 srcMatrixShape, ivec2 srcMatrixOffset, MatrixLayour layout)
 ```
+ArrayElemTy可以是任意标量或向量类型，当前数据类型T可支持：s8,s16,s32,fp16和fp32
 
 详细设计文档：
 - [OpCooperativeMatrixLoadHW 设计文档](op-cooperative-matrix-load-hw-design.md)
@@ -217,14 +220,14 @@ coopvecHW<T, M> vecA;
 + Pointer是一个指针。其类型必须是OpTypePointer，其Type操作数是一个具有标量或者向量元素类型的数组类型。指针的存储类别必须是CrossWorkGroup、Workgroup、StorageBuffer或PhysicalStorageBuffer。对指针的任何ArrayStride装饰符都将被忽略。
 
 SPV格式：
-| Word Count | Opcode | \<id\> Result Type | Result \<id\> | \<id\> Pointer |
-| -- | -- | -- | -- | -- |
-| 4+ | 6609 | Result Type \<id\> | Result \<id\> | Pointer \<id\> |
-
+| Word Count | Opcode | \<id\> Result Type | Result \<id\> | \<id\> Pointer | \<id\> Offset | Memory Operands(可选) |
+| -- | -- | -- | -- | -- | -- | -- |
+| 5+ | 6609 | Result Type \<id\> | Result \<id\> | Pointer \<id\> | Offset \<id\> | Memory Operands(可选) |
 GLSL函数签名：
 ```glsl
-void coopVecLoadHW(out coopvecHW<T, M> vec, T buf[]);
+void coopVecLoadHW(out coopvecHW<T, M> v, volatile coherent ArrayElemTy[] buf, uint offset);
 ```
+ArrayElemTy可以是任意标量或向量类型，当前数据类型T可支持：s8,s16,s32,fp16和fp32。协作向量从内存（从buf起始位置的offset字节偏移处开始）加载N个数据类型为T的数据到寄存器。不执行任何转换操作。
 
 详细设计文档：
 - [OpCooperativeVectorLoadHW 设计文档](op-cooperative-vector-load-hw-design.md)
@@ -233,14 +236,15 @@ void coopVecLoadHW(out coopvecHW<T, M> vec, T buf[]);
 通过指针store一个cooperative vector。
 
 SPV格式：
-| Word Count | Opcode | \<id\> Pointer | \<id\> Object |
-| -- | -- | -- | -- |
-| 3+ | 6610 | Pointer \<id\> | Object \<id\> |
+| Word Count | Opcode | \<id\> Pointer | \<id\> Offset | \<id\> Object | Memory Operands(可选) |
+| -- | -- | -- | -- | -- | -- |
+| 4+ | 6610 | Pointer \<id\> | \<id\> Offset | Object \<id\> | Memory Operands(可选) |
 
 GLSL函数签名：
 ```glsl
-void coopVecStoreHW(coopvecHW<T, M> vec, out T buf[]);
+void coopVecStoreHW(coopvecHW<T, M> v, out volatile coherent ArrayElemTy[] buf, uint offset);
 ```
+ArrayElemTy可以是任意标量或向量类型，当前数据类型T可支持：s8,s16,s32,fp16和fp32
 
 详细设计文档：
 - [OpCooperativeVectorStoreHW 设计文档](op-cooperative-vector-store-hw-design.md)
@@ -318,7 +322,54 @@ void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 需要新增的变量类型
 | glsl | spv |
 | -- | -- |
-| tensorMap1D<br>tensorMap2D<br>tensorMap3D<br>tensorMap4D | OpTypeTensorMap = 6466 |
+| tensorMap1D<br>tensorMap2D<br>tensorMap3D<br>tensorMap4D<br>tensorMap5D | OpTypeTensorMap = 6466 |
 
 详细设计文档：
 - [CpAsync 与 TensorMap 设计文档](cp-async-design.md)
+## OpShuffleIndex
+将Index线程的val数据赋值到目标线程
+| 5 | 6478 | \<id\> Result Type | Result \<id\> | \<id\> Value | \<id\> Index |
+| -- | -- | -- | -- | -- | -- |
++ Result Type必须是OpTypeInt(32-bit signed)
++ Value是要交换的数据，类型必须匹配Result Type
++ Index是源thread索引，类型为int32，范围为0-31，类型必须匹配Result Type
+
+函数声明如下：
+```
+int32_t shufidx(int32_t val, int32_t idx);
+```
+
+详细设计文档：
+- [OpShuffleIndex 设计文档](op-shuffle-index-design.md)
+## OpBytePermute
+从2个32bit数据中按Byte选择4Byte数据到输出数据
+| 6 | 6479 | \<id\> Result Type | Result \<id\> | \<id\> Src0 | \<id\> Src1 | \<id\> Mask |
+| -- | -- | -- | -- | -- | -- | -- |
++ Result Type必须是OpTypeInt(32-bit unsigned)
++ Src0是源数据0，类型必须匹配Result Type
++ Src1是源数据1，类型必须匹配Result Type
++ Mask用于选择数据，选择哪些Byte写到输出数据，范围0x0000-0x7777，类型必须匹配Result Type
+
+函数声明如下：
+```
+uint32_t bytePrmt(uint32_t src0, uint32_t src1, uint32_t mask);
+```
+
+详细设计文档：
+- [OpBytePermute 设计文档](op-byte-permute-design.md)
+## OpShuffleFillDown
+将src和fill的数据shuffle down填到对应的lane
+| 6 | 6480 | \<id\> Result Type | Result \<id\> | \<id\> Src | \<id\> Fill | \<id\> Shift |
+| -- | -- | -- | -- | -- | -- | -- |
++ Result Type必须是OpTypeInt(32-bit unsigned)
++ Src是源数据，类型必须匹配Result Type
++ Fill是填充数据，类型必须匹配Result Type
++ Shift为向下移位的量(粒度是32bit)，范围0-31，类型是OpTypeInt(32-bit signed)
+
+函数声明如下：
+```
+uint32_t shuffle_fill_down(uint32_t src, uint32_t fill, int32_t shift);
+```
+
+详细设计文档：
+- [OpShuffleFillDown 设计文档](op-shuffle-fill-down-design.md)

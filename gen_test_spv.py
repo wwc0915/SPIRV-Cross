@@ -46,6 +46,7 @@ OpCompositeExtract = 81; OpCompositeInsert = 82
 OpTypeTensorMap = 6466; OpCpAsyncTensorGlobalShared = 6470
 OpCpAsyncCommitGroup = 6474; OpCpAsyncWaitGroup = 6475
 OpBarrierArrive = 6476; OpBarrierWait = 6477
+OpShuffleIndex = 6478; OpBytePermute = 6479; OpShuffleFillDown = 6480
 
 StorageClassStorageBuffer = 12
 DecorationBlock = 2; DecorationBinding = 33; DecorationDescriptorSet = 34
@@ -67,7 +68,8 @@ def gen_length_test(outfile):
     int_t = 27; int_ptr_sb = 28; rtarray_int = 29; out_block_t = 30; out_block_ptr_t = 31
     out_var = 32; ptr_out0 = 33; ptr_out1 = 34
 
-    BOUND = 35
+    hw_int_t = 35; hw_v2int_t = 36; hw_si16 = 37; hw_si0 = 38
+    BOUND = 39
 
     out = b''
     # Header
@@ -108,6 +110,10 @@ def gen_length_test(outfile):
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeInt, int_t, 32, 1)  # signed int for LengthHW result
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypePointer, int_ptr_sb, StorageClassStorageBuffer, int_t)
@@ -122,8 +128,8 @@ def gen_length_test(outfile):
     out += inst(OpConstant, uint_t, c16b, 16)
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     # CoopMat types (UseA=0, UseB=1)
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16b, c0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatB, float_t, c16, c16b, c1)
@@ -148,8 +154,8 @@ def gen_length_test(outfile):
     out += inst(OpStore, ptr_out0, lenA)
     out += inst(OpStore, ptr_out1, lenB)
     # Store matrices back to memory using OpCooperativeMatrixStoreHW
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, matA, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, matB, dim16, dim0, c1)
+    out += inst(OpCooperativeMatrixStoreHW, matA, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, matB, ptr_elem, dim16, dim0, c1)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     # Update bound
@@ -170,7 +176,8 @@ def gen_store_test(outfile):
     coopmatA = 20
     ptr_elem = 21; matA = 22
 
-    BOUND = 23
+    hw_int_t = 23; hw_v2int_t = 24; hw_si16 = 25; hw_si0 = 26
+    BOUND = 27
 
     out = b''
     # Header
@@ -203,6 +210,10 @@ def gen_store_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -213,8 +224,8 @@ def gen_store_test(outfile):
     out += inst(OpConstant, uint_t, c16b, 16)
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     # CoopMat type (UseA=0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16b, c0)
     # Variables
@@ -227,7 +238,7 @@ def gen_store_test(outfile):
     # Load matrix
     out += inst(OpCooperativeMatrixLoadHW, coopmatA, matA, ptr_elem, dim16, dim0, c0)
     # Store matrix back (RowMajor)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, matA, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, matA, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     # Update bound
@@ -254,7 +265,8 @@ def gen_const_store_test(outfile):
     ptr_elem = 21
     c100f = 22; mat_const = 23
 
-    BOUND = 24
+    hw_int_t = 24; hw_v2int_t = 25; hw_si16 = 26; hw_si0 = 27
+    BOUND = 28
 
     out = b''
     # Header
@@ -287,6 +299,10 @@ def gen_const_store_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -299,8 +315,8 @@ def gen_const_store_test(outfile):
     out += inst(OpConstant, uint_t, c1, 1)
     # float constant 100.0 (IEEE 754: 0x42C80000)
     out += inst(OpConstant, float_t, c100f, 0x42C80000)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     # CoopMat type
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16b, c0)
     # CoopMat constant constructed from single scalar (splat)
@@ -313,7 +329,7 @@ def gen_const_store_test(outfile):
     # AccessChain
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
     # Store constant coopmat directly (immediate value)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, mat_const, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, mat_const, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     # Update bound
@@ -336,7 +352,8 @@ def gen_muladd_test(outfile):
     coopmatA = 20; coopmatB = 21; coopmatAcc = 22
     ptr_elem = 23; matA = 24; matB = 25; matC = 26; result = 27
 
-    BOUND = 29
+    hw_int_t = 29; hw_v2int_t = 30; hw_si16 = 31; hw_si0 = 32
+    BOUND = 33
 
     out = b''
     # Header
@@ -370,6 +387,10 @@ def gen_muladd_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -381,8 +402,8 @@ def gen_muladd_test(outfile):
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     # CoopMat types: UseA=0 (MatrixA), UseB=1 (MatrixB), Accumulator=2
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16b, c0)    # 16x16 UseA
     out += inst(OpTypeCooperativeMatrixHW, coopmatB, float_t, c16, c16b, c1)    # 16x16 UseB
@@ -401,7 +422,7 @@ def gen_muladd_test(outfile):
     # MulAdd: result = A * B + C
     out += inst(OpCooperativeMatrixMulAddHW, coopmatAcc, result, matA, matB, matC)
     # Store result
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     # Update bound
@@ -424,7 +445,8 @@ def gen_mul_test(outfile):
     ptr_elem = 23; matA = 24; matB = 25; result = 26
     undef_acc = 27  # OpUndef for accumulator type (None marker)
 
-    BOUND = 29
+    hw_int_t = 29; hw_v2int_t = 30; hw_si16 = 31; hw_si0 = 32
+    BOUND = 33
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -449,6 +471,10 @@ def gen_mul_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -459,8 +485,8 @@ def gen_mul_test(outfile):
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16b, c0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatB, float_t, c16, c16b, c1)
     out += inst(OpTypeCooperativeMatrixHW, coopmatAcc, float_t, c16, c16b, c2)
@@ -474,7 +500,7 @@ def gen_mul_test(outfile):
     out += inst(OpCooperativeMatrixLoadHW, coopmatB, matB, ptr_elem, dim16, dim0, c0)
     # Mul with C = OpUndef (None) -> coopmatMulHW
     out += inst(OpCooperativeMatrixMulAddHW, coopmatAcc, result, matA, matB, undef_acc)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -495,7 +521,8 @@ def gen_reduce_test(outfile):
     coopmatAcc = 20
     ptr_elem = 21; matA = 22; result1 = 23; result2 = 24
 
-    BOUND = 30
+    hw_int_t = 30; hw_v2int_t = 31; hw_si16 = 32; hw_si0 = 33
+    BOUND = 34
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -520,6 +547,10 @@ def gen_reduce_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -531,8 +562,8 @@ def gen_reduce_test(outfile):
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
     out += inst(OpConstant, uint_t, c3, 3)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     # Accumulator type (use=2)
     out += inst(OpTypeCooperativeMatrixHW, coopmatAcc, float_t, c16, c16b, c2)
     out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
@@ -544,8 +575,8 @@ def gen_reduce_test(outfile):
     out += inst(OpCooperativeMatrixReduceHW, coopmatAcc, result1, matA, c0, c0)
     # Reduce 2: Column ReduceMax (mask=1, op=2)
     out += inst(OpCooperativeMatrixReduceHW, coopmatAcc, result2, matA, c1, c2)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result1, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result2, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result1, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result2, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -567,7 +598,8 @@ def gen_convert_test(outfile):
     result_ftos = 26; result_stof = 27
     result_bitcast = 28
 
-    BOUND = 29
+    hw_int_t = 29; hw_v2int_t = 30; hw_si16 = 31; hw_si0 = 32
+    BOUND = 33
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -594,6 +626,10 @@ def gen_convert_test(outfile):
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeInt, int_t, 32, 1)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -604,8 +640,8 @@ def gen_convert_test(outfile):
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatF, float_t, c16, c16b, c0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatI, int_t, c16, c16b, c2)
     out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
@@ -619,9 +655,9 @@ def gen_convert_test(outfile):
     out += inst(OpConvertSToF, coopmatF, result_stof, result_ftos)
     # Bitcast: float -> int (reinterpret)
     out += inst(OpBitcast, coopmatI, result_bitcast, matF)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_stof, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_ftos, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_bitcast, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_stof, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_ftos, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_bitcast, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -644,7 +680,8 @@ def gen_bitcast32_test(outfile):
     # Bitcast results
     result_f2i = 27; result_i2f = 28; result_f2u = 29; result_u2f = 30
 
-    BOUND = 31
+    hw_int_t = 31; hw_v2int_t = 32; hw_si16 = 33; hw_si0 = 34
+    BOUND = 35
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -672,6 +709,10 @@ def gen_bitcast32_test(outfile):
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeInt, int_t, 32, 1)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -682,8 +723,8 @@ def gen_bitcast32_test(outfile):
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     # CoopMat types with 32-bit component types (all Accumulator use=2)
     out += inst(OpTypeCooperativeMatrixHW, coopmatF32, float_t, c16, c16b, c2)
     out += inst(OpTypeCooperativeMatrixHW, coopmatI32, int_t, c16, c16b, c2)
@@ -703,10 +744,10 @@ def gen_bitcast32_test(outfile):
     # Bitcast: uint32 -> float32 (should emit uintBitsToFloat)
     out += inst(OpBitcast, coopmatF32, result_u2f, result_f2u)
     # Store results
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2i, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_i2f, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2u, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_u2f, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_f2i, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_i2f, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_f2u, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_u2f, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -727,7 +768,8 @@ def gen_mul_null_test(outfile):
     ptr_elem = 23; matA = 24; matB = 25; result = 26
     null_acc = 27
 
-    BOUND = 29
+    hw_int_t = 29; hw_v2int_t = 30; hw_si16 = 31; hw_si0 = 32
+    BOUND = 33
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -752,6 +794,10 @@ def gen_mul_null_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -762,8 +808,8 @@ def gen_mul_null_test(outfile):
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16b, c0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatB, float_t, c16, c16b, c1)
     out += inst(OpTypeCooperativeMatrixHW, coopmatAcc, float_t, c16, c16b, c2)
@@ -777,7 +823,7 @@ def gen_mul_null_test(outfile):
     out += inst(OpCooperativeMatrixLoadHW, coopmatB, matB, ptr_elem, dim16, dim0, c0)
     # Mul with C = OpConstantNull -> should emit coopmatMulHW
     out += inst(OpCooperativeMatrixMulAddHW, coopmatAcc, result, matA, matB, null_acc)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -802,7 +848,8 @@ def gen_bitcast16_test(outfile):
     # Bitcast results
     result_f2i = 29; result_i2f = 30; result_f2u = 31; result_u2f = 32
 
-    BOUND = 33
+    hw_int_t = 33; hw_v2int_t = 34; hw_si16 = 35; hw_si0 = 36
+    BOUND = 37
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -836,6 +883,10 @@ def gen_bitcast16_test(outfile):
     out += inst(OpTypeInt, short_t, 16, 1)     # int16 (signed)
     out += inst(OpTypeInt, ushort_t, 16, 0)    # uint16 (unsigned)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -846,8 +897,8 @@ def gen_bitcast16_test(outfile):
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16b)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     # CoopMat types with 16-bit component types (all Accumulator use=2)
     out += inst(OpTypeCooperativeMatrixHW, coopmatF16, half_t, c16, c16b, c2)
     out += inst(OpTypeCooperativeMatrixHW, coopmatI16, short_t, c16, c16b, c2)
@@ -867,10 +918,10 @@ def gen_bitcast16_test(outfile):
     # Bitcast: uint16 -> float16 (should emit uint16BitsToFloat16)
     out += inst(OpBitcast, coopmatF16, result_u2f, result_f2u)
     # Store results
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2i, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_i2f, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_f2u, dim16, dim0, c0)
-    out += inst(OpCooperativeMatrixStoreHW, ptr_elem, result_u2f, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_f2i, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_i2f, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_f2u, ptr_elem, dim16, dim0, c0)
+    out += inst(OpCooperativeMatrixStoreHW, result_u2f, ptr_elem, dim16, dim0, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -930,7 +981,7 @@ def gen_coopvec_type_test(outfile):
     # AccessChain to get pointer to first element
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
     # Load coopvec
-    out += inst(OpCooperativeVectorLoadHW, coopvec, loaded, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, loaded, ptr_elem, c0)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -953,7 +1004,8 @@ def gen_coopvec_matmuladd_test(outfile):
     result_matmul = 27; result_muladd = 28
     v2uint_t = 29; dim16 = 30; dim0 = 31
 
-    BOUND = 32
+    hw_int_t = 32; hw_v2int_t = 33; hw_si16 = 34; hw_si0 = 35
+    BOUND = 36
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -978,6 +1030,10 @@ def gen_coopvec_matmuladd_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -987,8 +1043,8 @@ def gen_coopvec_matmuladd_test(outfile):
     out += inst(OpConstant, uint_t, c0, 0)
     out += inst(OpConstant, uint_t, c1, 1)
     out += inst(OpConstant, uint_t, c2, 2)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     out += inst(OpTypeCooperativeVectorHW, coopvec, float_t, c16)
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16, c0)
     out += inst(OpTypeCooperativeMatrixHW, coopmatB, float_t, c16, c16, c1)
@@ -997,13 +1053,13 @@ def gen_coopvec_matmuladd_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
-    out += inst(OpCooperativeVectorLoadHW, coopvec, vec_loaded, ptr_elem)
-    out += inst(OpCooperativeVectorLoadHW, coopvec, bias_loaded, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vec_loaded, ptr_elem, c0)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, bias_loaded, ptr_elem, c0)
     out += inst(OpCooperativeMatrixLoadHW, coopmatA, matA, ptr_elem, dim16, dim0, c0)
     out += inst(OpCooperativeMatrixLoadHW, coopmatB, matB, ptr_elem, dim16, dim0, c0)
     out += inst(OpCooperativeMatrixLoadHW, coopmatAcc, matC, ptr_elem, dim16, dim0, c0)
     out += inst(OpCooperativeVectorMatrixMulAddHW, coopvec, result_muladd, vec_loaded, matA, bias_loaded)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_muladd)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_muladd)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1023,7 +1079,8 @@ def gen_coopvec_matmul_test(outfile):
     ptr_elem = 17; vec_loaded = 18; matA = 19
     result = 20; v2uint_t = 21; dim16 = 22; dim0 = 23
 
-    BOUND = 24
+    hw_int_t = 24; hw_v2int_t = 25; hw_si16 = 26; hw_si0 = 27
+    BOUND = 28
 
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
@@ -1047,6 +1104,10 @@ def gen_coopvec_matmul_test(outfile):
     out += inst(OpTypeFloat, float_t, 32)
     out += inst(OpTypeInt, uint_t, 32, 0)
     out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
     out += inst(OpTypeFunction, func_t, void_t)
     out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
     out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
@@ -1054,18 +1115,18 @@ def gen_coopvec_matmul_test(outfile):
     out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
     out += inst(OpConstant, uint_t, c16, 16)
     out += inst(OpConstant, uint_t, c0, 0)
-    out += inst(OpConstantComposite, v2uint_t, dim16, c16, c16)
-    out += inst(OpConstantComposite, v2uint_t, dim0, c0, c0)
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
     out += inst(OpTypeCooperativeVectorHW, coopvec, float_t, c16)
     out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16, c0)
     out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
-    out += inst(OpCooperativeVectorLoadHW, coopvec, vec_loaded, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vec_loaded, ptr_elem, c0)
     out += inst(OpCooperativeMatrixLoadHW, coopmatA, matA, ptr_elem, dim16, dim0, c0)
     out += inst(OpCooperativeVectorMatrixMulHW, coopvec, result, vec_loaded, matA)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1231,16 +1292,16 @@ def gen_coopvec_convert_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
-    out += inst(OpCooperativeVectorLoadHW, coopvecF, vecF, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvecF, vecF, ptr_elem, c0)
     # ConvertFToS: float -> int
     out += inst(OpConvertFToS, coopvecI, result_ftos, vecF)
     # ConvertSToF: int -> float
     out += inst(OpConvertSToF, coopvecF, result_stof, result_ftos)
     # Bitcast: float -> int (reinterpret)
     out += inst(OpBitcast, coopvecI, result_bitcast, vecF)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_stof)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_ftos)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_bitcast)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_stof)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_ftos)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_bitcast)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1301,7 +1362,7 @@ def gen_coopvec_bitcast32_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
-    out += inst(OpCooperativeVectorLoadHW, coopvecF32, vecF, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvecF32, vecF, ptr_elem, c0)
     # Bitcast: float32 -> int32 (should emit floatBitsToInt)
     out += inst(OpBitcast, coopvecI32, result_f2i, vecF)
     # Bitcast: int32 -> float32 (should emit intBitsToFloat)
@@ -1310,10 +1371,10 @@ def gen_coopvec_bitcast32_test(outfile):
     out += inst(OpBitcast, coopvecU32, result_f2u, vecF)
     # Bitcast: uint32 -> float32 (should emit uintBitsToFloat)
     out += inst(OpBitcast, coopvecF32, result_u2f, result_f2u)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_f2i)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_i2f)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_f2u)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, result_u2f)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_f2i)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_i2f)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_f2u)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, result_u2f)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1370,8 +1431,8 @@ def gen_coopvec_arith_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
-    out += inst(OpCooperativeVectorLoadHW, coopvec, vecA, ptr_elem)
-    out += inst(OpCooperativeVectorLoadHW, coopvec, vecB, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vecA, ptr_elem, c0)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vecB, ptr_elem, c0)
     # FAdd
     out += inst(OpFAdd, coopvec, r_add, vecA, vecB)
     # FSub
@@ -1392,14 +1453,14 @@ def gen_coopvec_arith_test(outfile):
     GLSLstd450Fma = 50
     out += inst(OpExtInst, coopvec, r_fma, glsl_id, GLSLstd450Fma, vecA, vecB, r_add)
     # Store results
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_add)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_sub)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_mul)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_neg)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_vts)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_min)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_max)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_fma)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_add)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_sub)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_mul)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_neg)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_vts)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_min)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_max)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_fma)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1457,10 +1518,10 @@ def gen_coopvec_bit_test(outfile):
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, uint_ptr_sb, ptr_elem, data_var, c0, c0)
     # Load unsigned vectors
-    out += inst(OpCooperativeVectorLoadHW, coopvec_u, vecA, ptr_elem)
-    out += inst(OpCooperativeVectorLoadHW, coopvec_u, vecB, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec_u, vecA, ptr_elem, c0)
+    out += inst(OpCooperativeVectorLoadHW, coopvec_u, vecB, ptr_elem, c0)
     # Load signed vector for arithmetic shift
-    out += inst(OpCooperativeVectorLoadHW, coopvec_s, vecC, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec_s, vecC, ptr_elem, c0)
     # BitwiseOr
     out += inst(OpBitwiseOr, coopvec_u, r_or, vecA, vecB)
     # BitwiseXor
@@ -1476,13 +1537,13 @@ def gen_coopvec_bit_test(outfile):
     # ShiftRightArithmetic (signed vector)
     out += inst(OpShiftRightArithmetic, coopvec_s, r_shr_arith_s, vecC, vecC)
     # Store results
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_or)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_xor)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_and)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_not)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_shl)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_shr_log)
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_shr_arith_s)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_or)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_xor)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_and)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_not)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_shl)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_shr_log)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_shr_arith_s)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1537,7 +1598,7 @@ def gen_coopvec_index_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
-    out += inst(OpCooperativeVectorLoadHW, coopvec, vecA, ptr_elem)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vecA, ptr_elem, c0)
     # OpCompositeExtract: extract component 0 and component 1
     # 5 words | opcode:81 | Result Type | Result | Composite | Index...
     out += word((5 << 16) | OpCompositeExtract) + word(float_t) + word(r_extract0) + word(vecA) + word(0)
@@ -1546,7 +1607,7 @@ def gen_coopvec_index_test(outfile):
     # 6 words | opcode:82 | Result Type | Result | Object | Composite | Index...
     out += word((6 << 16) | OpCompositeInsert) + word(coopvec) + word(r_insert) + word(c42f) + word(vecA) + word(0)
     # Store the modified vector
-    out += inst(OpCooperativeVectorStoreHW, ptr_elem, r_insert)
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, r_insert)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1574,8 +1635,10 @@ def gen_cp_async_test(outfile):
     c0_vec2 = 25
     # barrier constants
     barrier_id = 26; barrier_n = 27; wait_n = 28
+    # reserved tensorMap5D type (no cp_async 5D overload; GLSL has no ivec5)
+    tmap5d = 29; tmap5d_ptr = 30; tmap5d_var = 31
 
-    BOUND = 29
+    BOUND = 32
 
     StorageClassWorkgroup = 4
     StorageClassFunction = 7
@@ -1609,9 +1672,11 @@ def gen_cp_async_test(outfile):
     # TensorMap types (dimensions = 1, 2)
     out += inst(OpTypeTensorMap, tmap1d, 1)
     out += inst(OpTypeTensorMap, tmap2d, 2)
+    out += inst(OpTypeTensorMap, tmap5d, 5)  # reserved: tensorMap5D
     # Pointer to TensorMap (Function storage for local vars)
     out += inst(OpTypePointer, tmap1d_ptr, StorageClassFunction, tmap1d)
     out += inst(OpTypePointer, tmap2d_ptr, StorageClassFunction, tmap2d)
+    out += inst(OpTypePointer, tmap5d_ptr, StorageClassFunction, tmap5d)
     # Shared memory
     out += inst(OpTypePointer, shared_ptr, StorageClassWorkgroup, int_t)
     # Constants
@@ -1632,6 +1697,7 @@ def gen_cp_async_test(outfile):
     # Function-scope variables (must be in first block)
     out += inst(OpVariable, tmap1d_ptr, tmap1d_var, StorageClassFunction)
     out += inst(OpVariable, tmap2d_ptr, tmap2d_var, StorageClassFunction)
+    out += inst(OpVariable, tmap5d_ptr, tmap5d_var, StorageClassFunction)
     out += inst(OpAccessChain, int_ptr_sb, ptr_elem, data_var, c0, c0)
     # cp_async_tensor_global_shared with 1D tensor
     out += inst(OpCpAsyncTensorGlobalShared, ptr_elem, tmap1d_var, c0)
@@ -1645,6 +1711,248 @@ def gen_cp_async_test(outfile):
     out += inst(OpBarrierArrive, barrier_id, barrier_n)
     # barrier_wait
     out += inst(OpBarrierWait, barrier_id, barrier_n)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
+def gen_shuffle_index_test(outfile):
+    """Generate test for OpShuffleIndex: int32 shufidx(int32 val, int32 idx)."""
+    void_t = 1; func_t = 2; main_f = 3; int_t = 4
+    int_ptr_sb = 5; rtarray_t = 6; block_t = 7; block_ptr_t = 8
+    out_var = 9; label = 10
+    cval = 11; cidx = 12; c0 = 13
+    ptr_out0 = 14; result = 15
+
+    BOUND = 16
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1)  # Shader
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (out_var, "output"), (int_t, "int")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, out_var, DecorationBinding, 0)
+    out += inst(OpDecorate, out_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeInt, int_t, 32, 1)  # signed int32
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, int_ptr_sb, StorageClassStorageBuffer, int_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, int_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, int_t, cval, 5)
+    out += inst(OpConstant, int_t, cidx, 2)
+    out += inst(OpConstant, int_t, c0, 0)
+    out += inst(OpVariable, block_ptr_t, out_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, int_ptr_sb, ptr_out0, out_var, c0, c0)
+    out += inst(OpShuffleIndex, int_t, result, cval, cidx)
+    out += inst(OpStore, ptr_out0, result)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
+def gen_byte_permute_test(outfile):
+    """Generate test for OpBytePermute: uint32 bytePrmt(uint32 src0, uint32 src1, uint32 mask)."""
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4
+    uint_ptr_sb = 5; rtarray_t = 6; block_t = 7; block_ptr_t = 8
+    out_var = 9; label = 10
+    csrc0 = 11; csrc1 = 12; cmask = 13; c0 = 14
+    ptr_out0 = 15; result = 16
+
+    BOUND = 17
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1)  # Shader
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (out_var, "output"), (uint_t, "uint")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, out_var, DecorationBinding, 0)
+    out += inst(OpDecorate, out_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeInt, uint_t, 32, 0)  # unsigned int32
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, uint_ptr_sb, StorageClassStorageBuffer, uint_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, uint_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, uint_t, csrc0, 0x12345678)
+    out += inst(OpConstant, uint_t, csrc1, 0x9ABCDEF0)
+    out += inst(OpConstant, uint_t, cmask, 0x7654)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpVariable, block_ptr_t, out_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, uint_ptr_sb, ptr_out0, out_var, c0, c0)
+    out += inst(OpBytePermute, uint_t, result, csrc0, csrc1, cmask)
+    out += inst(OpStore, ptr_out0, result)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
+def gen_shuffle_fill_down_test(outfile):
+    """Generate test for OpShuffleFillDown: uint32 shuffle_fill_down(uint32 src, uint32 fill, int32 shift)."""
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; int_t = 5
+    uint_ptr_sb = 6; rtarray_t = 7; block_t = 8; block_ptr_t = 9
+    out_var = 10; label = 11
+    csrc = 12; cfill = 13; cshift = 14; c0 = 15
+    ptr_out0 = 16; result = 17
+
+    BOUND = 18
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1)  # Shader
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (out_var, "output"), (uint_t, "uint"), (int_t, "int")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, out_var, DecorationBinding, 0)
+    out += inst(OpDecorate, out_var, DecorationDescriptorSet, 0)
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeInt, uint_t, 32, 0)  # unsigned int32 (src/fill/result)
+    out += inst(OpTypeInt, int_t, 32, 1)   # signed int32 (shift)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, uint_ptr_sb, StorageClassStorageBuffer, uint_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, uint_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    out += inst(OpConstant, uint_t, csrc, 0xCAFEBABE)
+    out += inst(OpConstant, uint_t, cfill, 0x11111111)
+    out += inst(OpConstant, int_t, cshift, 1)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpVariable, block_ptr_t, out_var, StorageClassStorageBuffer)
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, uint_ptr_sb, ptr_out0, out_var, c0, c0)
+    out += inst(OpShuffleFillDown, uint_t, result, csrc, cfill, cshift)
+    out += inst(OpStore, ptr_out0, result)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
+def gen_memops_test(outfile):
+    """Verify optional Memory Operands on coopmat/coopvec Load/Store HW are
+    recognized (parsed without operand mis-indexing) and ignored in GLSL output.
+
+    Mirrors the optional 'use' operand handling of OpTypeCooperativeMatrixHW:
+    some SPIR-V may carry a trailing Memory Operands mask (+ optional scope id),
+    which must not shift the fixed operands and must not appear in GLSL.
+    """
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; v2uint_t = 5; float_t = 6
+    float_ptr_sb = 7; rtarray_t = 8; block_t = 9; block_ptr_t = 10
+    data_var = 11; label = 12; glsl_id = 13
+    c16 = 14; c16b = 15; c0 = 16; c1 = 17
+    dim16 = 18; dim0 = 19
+    coopmatA = 20; coopvec = 21
+    ptr_elem = 22; matA = 23; vecA = 24
+    scope_c = 25  # Workgroup scope constant (for MakePointerAvailable trailing id)
+
+    hw_int_t = 26; hw_v2int_t = 27; hw_si16 = 28; hw_si0 = 29
+    BOUND = 30
+
+    # SPIR-V Memory Operands mask bits (core)
+    MemOp_NonPrivate = 0x20
+    MemOp_MakePointerAvailable = 0x10  # followed by a Scope <id>
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1) + inst(OpCapability, 6600) + inst(OpCapability, 6607)
+    sw = str_words("GLSL.std.450")
+    out += word(((1 + len(sw) + 1) << 16) | OpExtInstImport) + word(glsl_id) + b''.join(word(w) for w in sw)
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (data_var, "data"), (float_t, "float"), (uint_t, "uint")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, data_var, DecorationBinding, 0)
+    out += inst(OpDecorate, data_var, DecorationDescriptorSet, 0)
+    # Types
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeFloat, float_t, 32)
+    out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeVector, v2uint_t, uint_t, 2)
+    out += inst(OpTypeInt, hw_int_t, 32, 1)  # signed int for ivec2 shape/offset
+    out += inst(OpTypeVector, hw_v2int_t, hw_int_t, 2)
+    out += inst(OpConstant, hw_int_t, hw_si16, 16)
+    out += inst(OpConstant, hw_int_t, hw_si0, 0)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, float_ptr_sb, StorageClassStorageBuffer, float_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, float_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    # Constants
+    out += inst(OpConstant, uint_t, c16, 16)
+    out += inst(OpConstant, uint_t, c16b, 16)
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstant, uint_t, c1, 1)
+    out += inst(OpConstant, uint_t, scope_c, 2)  # Workgroup
+    out += inst(OpConstantComposite, hw_v2int_t, dim16, hw_si16, hw_si16)
+    out += inst(OpConstantComposite, hw_v2int_t, dim0, hw_si0, hw_si0)
+    # CoopMat + CoopVec types
+    out += inst(OpTypeCooperativeMatrixHW, coopmatA, float_t, c16, c16b, c0)
+    out += inst(OpTypeCooperativeVectorHW, coopvec, float_t, c16)
+    # Variables
+    out += inst(OpVariable, block_ptr_t, data_var, StorageClassStorageBuffer)
+    # Function
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    out += inst(OpLabel, label)
+    out += inst(OpAccessChain, float_ptr_sb, ptr_elem, data_var, c0, c0)
+
+    # coopmat Load with single-word memory operand (NonPrivate)
+    out += inst(OpCooperativeMatrixLoadHW, coopmatA, matA, ptr_elem, dim16, dim0, c0, MemOp_NonPrivate)
+    # coopmat Store with memory operand + trailing scope id (MakePointerAvailable|NonPrivate, Workgroup)
+    out += inst(OpCooperativeMatrixStoreHW, matA, ptr_elem, dim16, dim0, c0,
+                MemOp_MakePointerAvailable | MemOp_NonPrivate, scope_c)
+
+    # coopvec Load with single-word memory operand (NonPrivate)
+    out += inst(OpCooperativeVectorLoadHW, coopvec, vecA, ptr_elem, c0, MemOp_NonPrivate)
+    # coopvec Store with memory operand + trailing scope id
+    out += inst(OpCooperativeVectorStoreHW, ptr_elem, c0, vecA, MemOp_MakePointerAvailable, scope_c)
+
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1685,6 +1993,14 @@ if __name__ == '__main__':
         gen_coopvec_bit_test(outfile)
     elif 'coopvec_index' in base:
         gen_coopvec_index_test(outfile)
+    elif 'shuffle_index' in base:
+        gen_shuffle_index_test(outfile)
+    elif 'byte_permute' in base:
+        gen_byte_permute_test(outfile)
+    elif 'shuffle_fill_down' in base:
+        gen_shuffle_fill_down_test(outfile)
+    elif 'memops' in base:
+        gen_memops_test(outfile)
     elif 'cp_async' in base:
         gen_cp_async_test(outfile)
     elif 'muladd' in base:

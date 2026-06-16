@@ -15590,17 +15590,18 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 	case OpCooperativeVectorLoadHW:
 	{
-		if (length < 3)
+		if (length < 4)
 			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorLoadHW.");
 
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		uint32_t ptr = ops[2];
+		uint32_t offset = ops[3];
 
 		emit_uninitialized_temporary_expression(result_type, id);
 
 		auto expr = to_expression(ptr);
-		statement("coopVecLoadHW(", to_expression(id), ", ", expr, ");");
+		statement("coopVecLoadHW(", to_expression(id), ", ", expr, ", ", to_expression(offset), ");");
 
 		register_read(id, ptr, false);
 		break;
@@ -15720,8 +15721,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 5)
 			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixStoreHW.");
 
-		uint32_t ptr = ops[0];
-		uint32_t object = ops[1];
+		uint32_t object = ops[0];
+		uint32_t ptr = ops[1];
 		uint32_t src_shape = ops[2];
 		uint32_t src_offset = ops[3];
 		uint32_t layout_id = ops[4];
@@ -15741,14 +15742,15 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 	case OpCooperativeVectorStoreHW:
 	{
-		if (length < 2)
+		if (length < 3)
 			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorStoreHW.");
 
 		uint32_t ptr = ops[0];
-		uint32_t object = ops[1];
+		uint32_t offset = ops[1];
+		uint32_t object = ops[2];
 
 		auto expr = to_expression(ptr);
-		statement("coopVecStoreHW(", to_expression(object), ", ", expr, ");");
+		statement("coopVecStoreHW(", to_expression(object), ", ", expr, ", ", to_expression(offset), ");");
 
 		register_write(object);
 		break;
@@ -15803,6 +15805,67 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t barrier_id = ops[0];
 		uint32_t barrier_n = ops[1];
 		statement("barrier_wait(", to_expression(barrier_id), ", ", to_expression(barrier_n), ");");
+		break;
+	}
+
+	case OpShuffleIndex:
+	{
+		if (length < 4)
+			SPIRV_CROSS_THROW("Not enough operands for OpShuffleIndex.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t value = ops[2];
+		uint32_t index = ops[3];
+
+		bool forward = should_forward(value) && should_forward(index);
+		emit_op(result_type, id,
+		        join("shufidx(", to_expression(value), ", ", to_expression(index), ")"), forward);
+		inherit_expression_dependencies(id, value);
+		inherit_expression_dependencies(id, index);
+		break;
+	}
+
+	case OpBytePermute:
+	{
+		if (length < 5)
+			SPIRV_CROSS_THROW("Not enough operands for OpBytePermute.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t src0 = ops[2];
+		uint32_t src1 = ops[3];
+		uint32_t mask = ops[4];
+
+		bool forward = should_forward(src0) && should_forward(src1) && should_forward(mask);
+		emit_op(result_type, id,
+		        join("bytePrmt(", to_expression(src0), ", ", to_expression(src1), ", ", to_expression(mask), ")"),
+		        forward);
+		inherit_expression_dependencies(id, src0);
+		inherit_expression_dependencies(id, src1);
+		inherit_expression_dependencies(id, mask);
+		break;
+	}
+
+	case OpShuffleFillDown:
+	{
+		if (length < 5)
+			SPIRV_CROSS_THROW("Not enough operands for OpShuffleFillDown.");
+
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		uint32_t src = ops[2];
+		uint32_t fill = ops[3];
+		uint32_t shift = ops[4];
+
+		bool forward = should_forward(src) && should_forward(fill) && should_forward(shift);
+		emit_op(result_type, id,
+		        join("shuffle_fill_down(", to_expression(src), ", ", to_expression(fill), ", ", to_expression(shift),
+		             ")"),
+		        forward);
+		inherit_expression_dependencies(id, src);
+		inherit_expression_dependencies(id, fill);
+		inherit_expression_dependencies(id, shift);
 		break;
 	}
 

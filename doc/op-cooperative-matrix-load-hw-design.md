@@ -12,12 +12,12 @@
 
 | 字段 | 值 |
 |------|-----|
-| Opcode | 6502 |
-| Word Count | 5+vars |
+| Opcode | 6603 |
+| Word Count | 7+vars |
 
 **指令格式**:
 ```
-| Word Count | Opcode: 6502 | <id> Result Type | Result <id> | <id> Pointer | <id> srcMatrixShape | <id> srcMatrixOffset | <id> layout |
+| Word Count | Opcode: 6603 | <id> Result Type | Result <id> | <id> Pointer | <id> srcMatrixShape | <id> srcMatrixOffset | <id> layout | <id> Memory Operands/Operand (可选) |
 ```
 
 ### 2.2 操作数说明
@@ -27,9 +27,10 @@
 | Result Type | `<id>` | 结果类型，必须是 `OpTypeCooperativeMatrixHW` 类型 |
 | Result `<id>` | `<id>` | 加载结果的合作矩阵 ID |
 | Pointer | `<id>` | 指向标量/向量数组的指针 (`OpTypePointer`) |
-| srcMatrixShape | `<id>` | vec2 类型，表示源矩阵的行数和列数 |
-| srcMatrixOffset | `<id>` | vec2 类型，表示从源矩阵的哪个位置开始读取 (行偏移, 列偏移) |
+| srcMatrixShape | `<id>` | ivec2 类型，表示源矩阵的行数和列数 |
+| srcMatrixOffset | `<id>` | ivec2 类型，表示从源矩阵的哪个位置开始读取 (行偏移, 列偏移) |
 | layout | `<id>` | `CooperativeMatrixLayoutHW` 枚举常量 |
+| Memory Operands/Operand (可选) | `<id>` | SPIR-V 内存操作数，可选，不影响 GLSL 输出 |
 
 ### 2.3 关联枚举定义
 
@@ -61,13 +62,15 @@ enum CooperativeMatrixLayoutHW {
 ```glsl
 // 加载子矩阵
 void coopMatLoadHW(
-    out coopmatHW<T, M, K> mat,      // 输出矩阵
-    T buf[],                          // 源数据缓冲区
-    uvec2 srcMatrixShape,            // 源矩阵形状 (rows, cols)
-    uvec2 srcMatrixOffset,           // 起始偏移 (row_offset, col_offset)
-    uint layout                       // 布局方式
+    out coopmatHW<T, M, K> m,         // 输出矩阵
+    volatile coherent ArrayElemTy[] buf, // 源数据缓冲区
+    ivec2 srcMatrixShape,             // 源矩阵形状 (rows, cols)
+    ivec2 srcMatrixOffset,            // 起始偏移 (row_offset, col_offset)
+    MatrixLayout layout               // 布局方式
 );
 ```
+
+`ArrayElemTy` 可以是任意标量或向量类型，当前数据类型 T 可支持：s8, s16, s32, fp16 和 fp32。
 
 ### 3.3 类型表示
 

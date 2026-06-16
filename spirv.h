@@ -2269,6 +2269,9 @@ typedef enum SpvOp_ {
     SpvOpCpAsyncWaitGroup = 6475,
     SpvOpBarrierArrive = 6476,
     SpvOpBarrierWait = 6477,
+    SpvOpShuffleIndex = 6478,
+    SpvOpBytePermute = 6479,
+    SpvOpShuffleFillDown = 6480,
     SpvOpCooperativeMatrixLengthHW = 6602,
     SpvOpTypeCooperativeMatrixHW = 6601,
     SpvOpCooperativeMatrixLoadHW = 6603,
@@ -3067,6 +3070,9 @@ inline void SpvHasResultAndType(SpvOp opcode, bool *hasResult, bool *hasResultTy
     case SpvOpCpAsyncWaitGroup: *hasResult = false; *hasResultType = false; break;
     case SpvOpBarrierArrive: *hasResult = false; *hasResultType = false; break;
     case SpvOpBarrierWait: *hasResult = false; *hasResultType = false; break;
+    case SpvOpShuffleIndex: *hasResult = true; *hasResultType = true; break;
+    case SpvOpBytePermute: *hasResult = true; *hasResultType = true; break;
+    case SpvOpShuffleFillDown: *hasResult = true; *hasResultType = true; break;
     }
 }
 inline const char* SpvSourceLanguageToString(SpvSourceLanguage value) {
@@ -4930,6 +4936,9 @@ inline const char* SpvOpToString(SpvOp value) {
     case SpvOpCpAsyncWaitGroup: return "OpCpAsyncWaitGroup";
     case SpvOpBarrierArrive: return "OpBarrierArrive";
     case SpvOpBarrierWait: return "OpBarrierWait";
+    case SpvOpShuffleIndex: return "OpShuffleIndex";
+    case SpvOpBytePermute: return "OpBytePermute";
+    case SpvOpShuffleFillDown: return "OpShuffleFillDown";
     default: return "Unknown";
     }
 }

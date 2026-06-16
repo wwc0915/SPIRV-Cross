@@ -13,11 +13,11 @@
 | 字段 | 值 |
 |------|-----|
 | Opcode | 6610 |
-| Word Count | 3+ |
+| Word Count | 4+ |
 
 **指令格式**:
 ```
-| Word Count | Opcode: 6610 | <id> Pointer | <id> Object |
+| Word Count | Opcode: 6610 | <id> Pointer | <id> Offset | <id> Object | Memory Operands (可选) |
 ```
 
 ### 2.2 操作数说明
@@ -25,7 +25,9 @@
 | 操作数 | 类型 | 描述 |
 |--------|------|------|
 | Pointer | `<id>` | 指向标量/向量元素类型数组的指针 (`OpTypePointer`)，存储类别必须是 CrossWorkGroup、Workgroup、StorageBuffer 或 PhysicalStorageBuffer |
+| Offset | `<id>` | 从 buf 起始位置的字节偏移，类型为 32 位整数标量 |
 | Object | `<id>` | 要存储的协作向量 (`OpTypeCooperativeVectorHW`) |
+| Memory Operands (可选) | `<id>` | SPIR-V 内存操作数，可选，不影响 GLSL 输出 |
 
 ### 2.3 关联枚举定义
 
@@ -47,8 +49,10 @@ CapabilityCooperativeVectorHW = 6607
 ### 3.2 GLSL 函数签名
 
 ```glsl
-void coopVecStoreHW(coopvecHW<T, M> vec, out T buf[]);
+void coopVecStoreHW(coopvecHW<T, M> v, out volatile coherent ArrayElemTy[] buf, uint offset);
 ```
+
+`ArrayElemTy` 可以是任意标量或向量类型，当前数据类型 T 可支持：s8, s16, s32, fp16 和 fp32。
 
 ---
 
@@ -69,8 +73,8 @@ layout(binding = 0) buffer Data {
 
 void main() {
     coopvecHW<float, 16u> vec;
-    coopVecLoadHW(vec, data._m0[0u]);
-    coopVecStoreHW(vec, data._m0[0u]);
+    coopVecLoadHW(vec, data._m0[0u], 0u);
+    coopVecStoreHW(vec, data._m0[0u], 0u);
 }
 ```
 
@@ -80,12 +84,12 @@ void main() {
 ```glsl
 void main() {
     coopvecHW<float, 16u> vec;
-    coopVecLoadHW(vec, data._m0[0u]);
+    coopVecLoadHW(vec, data._m0[0u], 0u);
     coopmatHW<float, 16u, 16u> mat;
     coopMatLoadHW(mat, data._m0[0u], uvec2(16u), uvec2(0u), gl_CooperativeMatrixLayoutRowMajorHW);
     coopvecHW<float, 16u> result;
     coopVecMatMulHW(result, vec, mat);
-    coopVecStoreHW(result, data._m0[0u]);
+    coopVecStoreHW(result, data._m0[0u], 0u);
 }
 ```
 
@@ -112,21 +116,22 @@ void main() {
 ```cpp
 case OpCooperativeVectorStoreHW:
 {
-    if (length < 2)
+    if (length < 3)
         SPIRV_CROSS_THROW("Not enough operands for OpCooperativeVectorStoreHW.");
 
     uint32_t ptr = ops[0];
-    uint32_t object = ops[1];
+    uint32_t offset = ops[1];
+    uint32_t object = ops[2];
 
     auto expr = to_expression(ptr);
-    statement("coopVecStoreHW(", to_expression(object), ", ", expr, ");");
+    statement("coopVecStoreHW(", to_expression(object), ", ", expr, ", ", to_expression(offset), ");");
 
     register_write(object);
     break;
 }
 ```
 
-注意：SPIR-V 格式为 `Pointer, Object`，而 GLSL 函数签名为 `void coopVecStoreHW(vec, buf)`，即参数顺序与 SPIR-V 相同（Object 在前，Pointer 在后）。
+注意：SPIR-V 格式为 `Pointer, Offset, Object`，而 GLSL 函数签名为 `void coopVecStoreHW(vec, buf, offset)`（Object 在前，Pointer 居中，Offset 在后）。发射时按 GLSL 签名顺序排列参数。
 
 ---
 

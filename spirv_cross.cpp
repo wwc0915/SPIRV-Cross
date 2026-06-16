@@ -821,12 +821,19 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 
 	case OpAtomicStore:
 	case OpStore:
-	case OpCooperativeMatrixStoreHW:
 	case OpCooperativeVectorStoreHW:
 		// Invalid SPIR-V.
 		if (length < 1)
 			return false;
 		variable = args[0];
+		break;
+
+	case OpCooperativeMatrixStoreHW:
+		// OpCooperativeMatrixStoreHW is (Object, Pointer, srcShape, srcOffset, layout, [Memory Operands]).
+		// The backing interface variable is the Pointer at args[1]; Object is at args[0].
+		if (length < 2)
+			return false;
+		variable = args[1];
 		break;
 
 	case OpCopyMemory:
@@ -3474,7 +3481,10 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		if (length < 2)
 			return false;
 
-		ID ptr = args[0];
+		// OpStore and OpCooperativeVectorStoreHW put the Pointer at args[0].
+		// OpCooperativeMatrixStoreHW is (Object, Pointer, srcShape, srcOffset, layout, [Memory Operands]),
+		// so its Pointer is at args[1].
+		ID ptr = (op == OpCooperativeMatrixStoreHW) ? args[1] : args[0];
 		auto *var = compiler.maybe_get_backing_variable(ptr);
 
 		// If we store through an access chain, we have a partial write.
@@ -3487,9 +3497,9 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 				partial_write_variables_to_block[var->self].insert(current_block->self);
 		}
 
-		// args[0] might be an access chain we have to track use of.
-		notify_variable_access(args[0], current_block->self);
-		// Might try to store a Phi variable here.
+		// The pointer expression might be an access chain we have to track use of.
+		notify_variable_access(ptr, current_block->self);
+		// Might try to store a Phi variable here (Object for OpStore).
 		notify_variable_access(args[1], current_block->self);
 		break;
 	}

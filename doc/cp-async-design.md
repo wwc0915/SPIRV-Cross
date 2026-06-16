@@ -12,6 +12,9 @@
 | tensorMap2D | OpTypeTensorMap (dimensions=2) | 6466 |
 | tensorMap3D | OpTypeTensorMap (dimensions=3) | 6466 |
 | tensorMap4D | OpTypeTensorMap (dimensions=4) | 6466 |
+| tensorMap5D | OpTypeTensorMap (dimensions=5) | 6466 |
+
+> `tensorMap5D` 为**预留类型**：`OpTypeTensorMap` 支持声明 dimensions=5 的类型，但因 GLSL 不存在 `ivec5`，`cp_async_tensor_global_shared` 暂不提供 5D 重载。
 
 ### 1.2 新增 Intrinsic 指令
 
@@ -36,7 +39,7 @@
 ```
 
 - hasResult = true, hasResultType = false
-- dimensions: 1 ~ 4，表示张量映射的维度
+- dimensions: 1 ~ 5，表示张量映射的维度（其中 5D 为预留类型，见 1.1 节）
 
 ### 2.2 OpCpAsyncTensorGlobalShared（异步拷贝）
 
@@ -96,7 +99,7 @@ case SPIRType::TensorMap:
     return join("tensorMap", type.ext.tensorMap.dimensions, "D");
 ```
 
-根据 dimensions 值（1/2/3/4）生成 `tensorMap1D` / `tensorMap2D` / `tensorMap3D` / `tensorMap4D`。
+根据 dimensions 值（1/2/3/4/5）生成 `tensorMap1D` / `tensorMap2D` / `tensorMap3D` / `tensorMap4D` / `tensorMap5D`。`tensorMap5D` 仅在类型被引用时才会渲染（当前无 5D cp_async 重载，故通常不出现于输出）。
 
 ### 3.3 指令发射
 
