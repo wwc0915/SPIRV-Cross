@@ -49,10 +49,10 @@ OpShiftRightLogical = 194; OpShiftRightArithmetic = 195; OpShiftLeftLogical = 19
 OpBitwiseOr = 197; OpBitwiseXor = 198; OpBitwiseAnd = 199; OpNot = 200
 OpStore = 62; OpLoad = 61; OpUndef = 1
 OpCompositeExtract = 81; OpCompositeInsert = 82
-OpTypeTensorMap = 6466; OpCpAsyncTensorGlobalShared = 6470
-OpCpAsyncCommitGroup = 6474; OpCpAsyncWaitGroup = 6475
-OpBarrierArrive = 6476; OpBarrierWait = 6477
-OpShuffleIndex = 6478; OpBytePermute = 6479; OpShuffleFillDown = 6480
+OpTypeTensorMapHW = 6613; OpCpAsyncTensorGlobalSharedHW = 6614
+OpCpAsyncCommitGroupHW = 6615; OpCpAsyncWaitGroupHW = 6616
+OpBarrierArriveHW = 6617; OpBarrierWaitHW = 6618
+OpShuffleIndexHW = 6619; OpBytePermuteHW = 6620; OpShuffleFillDownHW = 6621
 
 HW_NEURAL_SHADER_EXT = "SPV_HW_neural_shader"
 OpTypeBool = 20; OpIEqual = 170
@@ -1650,10 +1650,8 @@ def gen_cp_async_test(outfile):
     c0_vec2 = 25
     # barrier constants
     barrier_id = 26; barrier_n = 27; wait_n = 28
-    # reserved tensorMap5D type (no cp_async 5D overload; GLSL has no ivec5)
-    tmap5d = 29; tmap5d_ptr = 30; tmap5d_var = 31
 
-    BOUND = 32
+    BOUND = 29
 
     StorageClassWorkgroup = 4
     StorageClassFunction = 7
@@ -1686,13 +1684,11 @@ def gen_cp_async_test(outfile):
     # Vector types for coords
     out += inst(OpTypeVector, ivec2_t, int_t, 2)
     # TensorMap types (dimensions = 1, 2)
-    out += inst(OpTypeTensorMap, tmap1d, 1)
-    out += inst(OpTypeTensorMap, tmap2d, 2)
-    out += inst(OpTypeTensorMap, tmap5d, 5)  # reserved: tensorMap5D
+    out += inst(OpTypeTensorMapHW, tmap1d, 1)
+    out += inst(OpTypeTensorMapHW, tmap2d, 2)
     # Pointer to TensorMap (Function storage for local vars)
     out += inst(OpTypePointer, tmap1d_ptr, StorageClassFunction, tmap1d)
     out += inst(OpTypePointer, tmap2d_ptr, StorageClassFunction, tmap2d)
-    out += inst(OpTypePointer, tmap5d_ptr, StorageClassFunction, tmap5d)
     # Shared memory
     out += inst(OpTypePointer, shared_ptr, StorageClassWorkgroup, int_t)
     # Constants
@@ -1713,20 +1709,19 @@ def gen_cp_async_test(outfile):
     # Function-scope variables (must be in first block)
     out += inst(OpVariable, tmap1d_ptr, tmap1d_var, StorageClassFunction)
     out += inst(OpVariable, tmap2d_ptr, tmap2d_var, StorageClassFunction)
-    out += inst(OpVariable, tmap5d_ptr, tmap5d_var, StorageClassFunction)
     out += inst(OpAccessChain, int_ptr_sb, ptr_elem, data_var, c0, c0)
-    # cp_async_tensor_global_shared with 1D tensor
-    out += inst(OpCpAsyncTensorGlobalShared, ptr_elem, tmap1d_var, c0)
-    # cp_async_tensor_global_shared with 2D tensor
-    out += inst(OpCpAsyncTensorGlobalShared, ptr_elem, tmap2d_var, c0_vec2)
+    # cp_async_tensor_global_shared with 1D tensor (dimensions=1 first operand)
+    out += inst(OpCpAsyncTensorGlobalSharedHW, 1, ptr_elem, tmap1d_var, c0)
+    # cp_async_tensor_global_shared with 2D tensor (dimensions=2 first operand)
+    out += inst(OpCpAsyncTensorGlobalSharedHW, 2, ptr_elem, tmap2d_var, c0_vec2)
     # cp_async_commit_group
-    out += inst(OpCpAsyncCommitGroup)
-    # cp_async_wait_group
-    out += inst(OpCpAsyncWaitGroup, wait_n)
+    out += inst(OpCpAsyncCommitGroupHW)
+    # cp_async_wait_group (N is a variable id)
+    out += inst(OpCpAsyncWaitGroupHW, wait_n)
     # barrier_arrive
-    out += inst(OpBarrierArrive, barrier_id, barrier_n)
+    out += inst(OpBarrierArriveHW, barrier_id, barrier_n)
     # barrier_wait
-    out += inst(OpBarrierWait, barrier_id, barrier_n)
+    out += inst(OpBarrierWaitHW, barrier_id, barrier_n)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
     data = bytearray(out)
@@ -1736,7 +1731,7 @@ def gen_cp_async_test(outfile):
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
 def gen_shuffle_index_test(outfile):
-    """Generate test for OpShuffleIndex: int32 shufidx(int32 val, int32 idx)."""
+    """Generate test for OpShuffleIndexHW: int32 shufidx(int32 val, int32 idx)."""
     void_t = 1; func_t = 2; main_f = 3; int_t = 4
     int_ptr_sb = 5; rtarray_t = 6; block_t = 7; block_ptr_t = 8
     out_var = 9; label = 10
@@ -1775,7 +1770,7 @@ def gen_shuffle_index_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, int_ptr_sb, ptr_out0, out_var, c0, c0)
-    out += inst(OpShuffleIndex, int_t, result, cval, cidx)
+    out += inst(OpShuffleIndexHW, int_t, result, cval, cidx)
     out += inst(OpStore, ptr_out0, result)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
@@ -1786,7 +1781,7 @@ def gen_shuffle_index_test(outfile):
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
 def gen_byte_permute_test(outfile):
-    """Generate test for OpBytePermute: uint32 bytePrmt(uint32 src0, uint32 src1, uint32 mask)."""
+    """Generate test for OpBytePermuteHW: uint32 bytePrmt(uint32 src0, uint32 src1, uint32 mask)."""
     void_t = 1; func_t = 2; main_f = 3; uint_t = 4
     uint_ptr_sb = 5; rtarray_t = 6; block_t = 7; block_ptr_t = 8
     out_var = 9; label = 10
@@ -1826,7 +1821,7 @@ def gen_byte_permute_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, uint_ptr_sb, ptr_out0, out_var, c0, c0)
-    out += inst(OpBytePermute, uint_t, result, csrc0, csrc1, cmask)
+    out += inst(OpBytePermuteHW, uint_t, result, csrc0, csrc1, cmask)
     out += inst(OpStore, ptr_out0, result)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)
@@ -1837,7 +1832,7 @@ def gen_byte_permute_test(outfile):
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
 def gen_shuffle_fill_down_test(outfile):
-    """Generate test for OpShuffleFillDown: uint32 shuffle_fill_down(uint32 src, uint32 fill, int32 shift)."""
+    """Generate test for OpShuffleFillDownHW: uint32 shuffle_fill_down(uint32 src, uint32 fill, int32 shift)."""
     void_t = 1; func_t = 2; main_f = 3; uint_t = 4; int_t = 5
     uint_ptr_sb = 6; rtarray_t = 7; block_t = 8; block_ptr_t = 9
     out_var = 10; label = 11
@@ -1878,7 +1873,7 @@ def gen_shuffle_fill_down_test(outfile):
     out += inst(OpFunction, void_t, main_f, 0, func_t)
     out += inst(OpLabel, label)
     out += inst(OpAccessChain, uint_ptr_sb, ptr_out0, out_var, c0, c0)
-    out += inst(OpShuffleFillDown, uint_t, result, csrc, cfill, cshift)
+    out += inst(OpShuffleFillDownHW, uint_t, result, csrc, cfill, cshift)
     out += inst(OpStore, ptr_out0, result)
     out += inst(OpReturn)
     out += inst(OpFunctionEnd)

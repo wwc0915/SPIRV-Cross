@@ -827,7 +827,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpTypeTensorMap:
+	case OpTypeTensorMapHW:
 	{
 		uint32_t id = ops[0];
 		auto &type = set<SPIRType>(id, op);

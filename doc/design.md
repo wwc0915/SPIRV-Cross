@@ -316,23 +316,23 @@ SPV_HW_neural_shader
 需要新增的intrinsic
 | glsl | spv |
 | -- | -- |
-| void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap1D tensorSharp, int coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap2D tensorSharp, ivec2 coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap3D tensorSharp, ivec3 coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap4D tensorSharp, ivec4 coord); | OpCpAsyncTensorGlobalShared = 6470 |
-| void cp_async_commit_group(); | OpCpAsyncCommitGroup = 6474 |
-| void cp_async_wait_group(int N); | OpCpAsyncWaitGroup = 6475 |
-| void barrier_arrive(int id, int n); | OpBarrierArrive = 6476 |
-| void barrier_wait(int id, int n); | OpBarrierWait = 6477 |
+| void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap1D tensorSharp, int coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap2D tensorSharp, ivec2 coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap3D tensorSharp, ivec3 coord); <br> void cp_async_tensor_global_shared(shared int[] dstMem, tensorMap4D tensorSharp, ivec4 coord); | OpCpAsyncTensorGlobalSharedHW = 6614 |
+| void cp_async_commit_group(); | OpCpAsyncCommitGroupHW = 6615 |
+| void cp_async_wait_group(int N); | OpCpAsyncWaitGroupHW = 6616 |
+| void barrier_arrive(int id, int n); | OpBarrierArriveHW = 6617 |
+| void barrier_wait(int id, int n); | OpBarrierWaitHW = 6618 |
 
 需要新增的变量类型
 | glsl | spv |
 | -- | -- |
-| tensorMap1D<br>tensorMap2D<br>tensorMap3D<br>tensorMap4D<br>tensorMap5D | OpTypeTensorMap = 6466 |
+| tensorMap1D<br>tensorMap2D<br>tensorMap3D<br>tensorMap4D | OpTypeTensorMapHW = 6613 |
 
 详细设计文档：
 - [CpAsync 与 TensorMap 设计文档](cp-async-design.md)
-## OpShuffleIndex
+## OpShuffleIndexHW
 归属扩展 SPV_HW_neural_shader（GLSL 输出 `GL_HW_neural_shader`），与 cp-async 共用同一扩展。
 将Index线程的val数据赋值到目标线程
-| 5 | 6478 | \<id\> Result Type | Result \<id\> | \<id\> Value | \<id\> Index |
+| 5 | 6619 | \<id\> Result Type | Result \<id\> | \<id\> Value | \<id\> Index |
 | -- | -- | -- | -- | -- | -- |
 + Result Type必须是OpTypeInt(32-bit signed)
 + Value是要交换的数据，类型必须匹配Result Type
@@ -344,10 +344,10 @@ int32_t shufidx(int32_t val, int32_t idx);
 ```
 
 详细设计文档：
-- [OpShuffleIndex 设计文档](op-shuffle-index-design.md)
-## OpBytePermute
+- [OpShuffleIndexHW 设计文档](op-shuffle-index-design.md)
+## OpBytePermuteHW
 从2个32bit数据中按Byte选择4Byte数据到输出数据
-| 6 | 6479 | \<id\> Result Type | Result \<id\> | \<id\> Src0 | \<id\> Src1 | \<id\> Mask |
+| 6 | 6620 | \<id\> Result Type | Result \<id\> | \<id\> Src0 | \<id\> Src1 | \<id\> Mask |
 | -- | -- | -- | -- | -- | -- | -- |
 + Result Type必须是OpTypeInt(32-bit unsigned)
 + Src0是源数据0，类型必须匹配Result Type
@@ -360,10 +360,10 @@ uint32_t bytePrmt(uint32_t src0, uint32_t src1, uint32_t mask);
 ```
 
 详细设计文档：
-- [OpBytePermute 设计文档](op-byte-permute-design.md)
-## OpShuffleFillDown
+- [OpBytePermuteHW 设计文档](op-byte-permute-design.md)
+## OpShuffleFillDownHW
 将src和fill的数据shuffle down填到对应的lane
-| 6 | 6480 | \<id\> Result Type | Result \<id\> | \<id\> Src | \<id\> Fill | \<id\> Shift |
+| 6 | 6621 | \<id\> Result Type | Result \<id\> | \<id\> Src | \<id\> Fill | \<id\> Shift |
 | -- | -- | -- | -- | -- | -- | -- |
 + Result Type必须是OpTypeInt(32-bit unsigned)
 + Src是源数据，类型必须匹配Result Type
@@ -376,7 +376,7 @@ uint32_t shuffle_fill_down(uint32_t src, uint32_t fill, int32_t shift);
 ```
 
 详细设计文档：
-- [OpShuffleFillDown 设计文档](op-shuffle-fill-down-design.md)
+- [OpShuffleFillDownHW 设计文档](op-shuffle-fill-down-design.md)
 
 ## [[reg_control]]
 我们在SPV的OpSelectionMerge上加了一个枚举Relreg，对应的glsl签名是[[reg_control]]，以下是要还原的glsl代码：

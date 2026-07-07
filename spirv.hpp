@@ -2261,26 +2261,26 @@ enum Op {
     OpGroupLogicalXorKHR = 6408,
     OpMaskedGatherINTEL = 6428,
     OpMaskedScatterINTEL = 6429,
-    OpCooperativeMatrixLengthHW = 6602,
     OpTypeCooperativeMatrixHW = 6601,
+    OpCooperativeMatrixLengthHW = 6602,
     OpCooperativeMatrixLoadHW = 6603,
     OpCooperativeMatrixStoreHW = 6604,
     OpCooperativeMatrixMulAddHW = 6605,
     OpCooperativeMatrixReduceHW = 6606,
-    OpTypeTensorMap = 6466,
-    OpCpAsyncTensorGlobalShared = 6470,
-    OpCpAsyncCommitGroup = 6474,
-    OpCpAsyncWaitGroup = 6475,
-    OpBarrierArrive = 6476,
-    OpBarrierWait = 6477,
-    OpShuffleIndex = 6478,
-    OpBytePermute = 6479,
-    OpShuffleFillDown = 6480,
     OpTypeCooperativeVectorHW = 6608,
     OpCooperativeVectorLoadHW = 6609,
     OpCooperativeVectorStoreHW = 6610,
     OpCooperativeVectorMatrixMulAddHW = 6611,
     OpCooperativeVectorMatrixMulHW = 6612,
+    OpTypeTensorMapHW = 6613,
+    OpCpAsyncTensorGlobalSharedHW = 6614,
+    OpCpAsyncCommitGroupHW = 6615,
+    OpCpAsyncWaitGroupHW = 6616,
+    OpBarrierArriveHW = 6617,
+    OpBarrierWaitHW = 6618,
+    OpShuffleIndexHW = 6619,
+    OpBytePermuteHW = 6620,
+    OpShuffleFillDownHW = 6621,
     OpMax = 0x7fffffff,
 };
 
@@ -3051,8 +3051,8 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpGroupLogicalXorKHR: *hasResult = true; *hasResultType = true; break;
     case OpMaskedGatherINTEL: *hasResult = true; *hasResultType = true; break;
     case OpMaskedScatterINTEL: *hasResult = false; *hasResultType = false; break;
-    case OpCooperativeMatrixLengthHW: *hasResult = true; *hasResultType = true; break;
     case OpTypeCooperativeMatrixHW: *hasResult = true; *hasResultType = false; break;
+    case OpCooperativeMatrixLengthHW: *hasResult = true; *hasResultType = true; break;
     case OpCooperativeMatrixLoadHW: *hasResult = true; *hasResultType = true; break;
     case OpCooperativeMatrixStoreHW: *hasResult = false; *hasResultType = false; break;
     case OpCooperativeMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
@@ -3062,15 +3062,15 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpCooperativeVectorStoreHW: *hasResult = false; *hasResultType = false; break;
     case OpCooperativeVectorMatrixMulAddHW: *hasResult = true; *hasResultType = true; break;
     case OpCooperativeVectorMatrixMulHW: *hasResult = true; *hasResultType = true; break;
-    case OpTypeTensorMap: *hasResult = true; *hasResultType = false; break;
-    case OpCpAsyncTensorGlobalShared: *hasResult = false; *hasResultType = false; break;
-    case OpCpAsyncCommitGroup: *hasResult = false; *hasResultType = false; break;
-    case OpCpAsyncWaitGroup: *hasResult = false; *hasResultType = false; break;
-    case OpBarrierArrive: *hasResult = false; *hasResultType = false; break;
-    case OpBarrierWait: *hasResult = false; *hasResultType = false; break;
-    case OpShuffleIndex: *hasResult = true; *hasResultType = true; break;
-    case OpBytePermute: *hasResult = true; *hasResultType = true; break;
-    case OpShuffleFillDown: *hasResult = true; *hasResultType = true; break;
+    case OpTypeTensorMapHW: *hasResult = true; *hasResultType = false; break;
+    case OpCpAsyncTensorGlobalSharedHW: *hasResult = false; *hasResultType = false; break;
+    case OpCpAsyncCommitGroupHW: *hasResult = false; *hasResultType = false; break;
+    case OpCpAsyncWaitGroupHW: *hasResult = false; *hasResultType = false; break;
+    case OpBarrierArriveHW: *hasResult = false; *hasResultType = false; break;
+    case OpBarrierWaitHW: *hasResult = false; *hasResultType = false; break;
+    case OpShuffleIndexHW: *hasResult = true; *hasResultType = true; break;
+    case OpBytePermuteHW: *hasResult = true; *hasResultType = true; break;
+    case OpShuffleFillDownHW: *hasResult = true; *hasResultType = true; break;
     }
 }
 inline const char* SourceLanguageToString(SourceLanguage value) {
@@ -4917,8 +4917,8 @@ inline const char* OpToString(Op value) {
     case OpGroupLogicalXorKHR: return "OpGroupLogicalXorKHR";
     case OpMaskedGatherINTEL: return "OpMaskedGatherINTEL";
     case OpMaskedScatterINTEL: return "OpMaskedScatterINTEL";
-    case OpCooperativeMatrixLengthHW: return "OpCooperativeMatrixLengthHW";
     case OpTypeCooperativeMatrixHW: return "OpTypeCooperativeMatrixHW";
+    case OpCooperativeMatrixLengthHW: return "OpCooperativeMatrixLengthHW";
     case OpCooperativeMatrixLoadHW: return "OpCooperativeMatrixLoadHW";
     case OpCooperativeMatrixStoreHW: return "OpCooperativeMatrixStoreHW";
     case OpCooperativeMatrixMulAddHW: return "OpCooperativeMatrixMulAddHW";
@@ -4928,15 +4928,15 @@ inline const char* OpToString(Op value) {
     case OpCooperativeVectorStoreHW: return "OpCooperativeVectorStoreHW";
     case OpCooperativeVectorMatrixMulAddHW: return "OpCooperativeVectorMatrixMulAddHW";
     case OpCooperativeVectorMatrixMulHW: return "OpCooperativeVectorMatrixMulHW";
-    case OpTypeTensorMap: return "OpTypeTensorMap";
-    case OpCpAsyncTensorGlobalShared: return "OpCpAsyncTensorGlobalShared";
-    case OpCpAsyncCommitGroup: return "OpCpAsyncCommitGroup";
-    case OpCpAsyncWaitGroup: return "OpCpAsyncWaitGroup";
-    case OpBarrierArrive: return "OpBarrierArrive";
-    case OpBarrierWait: return "OpBarrierWait";
-    case OpShuffleIndex: return "OpShuffleIndex";
-    case OpBytePermute: return "OpBytePermute";
-    case OpShuffleFillDown: return "OpShuffleFillDown";
+    case OpTypeTensorMapHW: return "OpTypeTensorMapHW";
+    case OpCpAsyncTensorGlobalSharedHW: return "OpCpAsyncTensorGlobalSharedHW";
+    case OpCpAsyncCommitGroupHW: return "OpCpAsyncCommitGroupHW";
+    case OpCpAsyncWaitGroupHW: return "OpCpAsyncWaitGroupHW";
+    case OpBarrierArriveHW: return "OpBarrierArriveHW";
+    case OpBarrierWaitHW: return "OpBarrierWaitHW";
+    case OpShuffleIndexHW: return "OpShuffleIndexHW";
+    case OpBytePermuteHW: return "OpBytePermuteHW";
+    case OpShuffleFillDownHW: return "OpShuffleFillDownHW";
     default: return "Unknown";
     }
 }

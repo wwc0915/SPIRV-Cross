@@ -17,23 +17,20 @@ cp-async 与 shuffle 系列指令共用此扩展。SPIRV-Cross 在发射相关�
 
 | GLSL 类型 | SPIR-V 指令 | Opcode |
 |-----------|------------|--------|
-| tensorMap1D | OpTypeTensorMap (dimensions=1) | 6466 |
-| tensorMap2D | OpTypeTensorMap (dimensions=2) | 6466 |
-| tensorMap3D | OpTypeTensorMap (dimensions=3) | 6466 |
-| tensorMap4D | OpTypeTensorMap (dimensions=4) | 6466 |
-| tensorMap5D | OpTypeTensorMap (dimensions=5) | 6466 |
-
-> `tensorMap5D` 为**预留类型**：`OpTypeTensorMap` 支持声明 dimensions=5 的类型，但因 GLSL 不存在 `ivec5`，`cp_async_tensor_global_shared` 暂不提供 5D 重载。
+| tensorMap1D | OpTypeTensorMapHW (dimensions=1) | 6613 |
+| tensorMap2D | OpTypeTensorMapHW (dimensions=2) | 6613 |
+| tensorMap3D | OpTypeTensorMapHW (dimensions=3) | 6613 |
+| tensorMap4D | OpTypeTensorMapHW (dimensions=4) | 6613 |
 
 ### 1.2 新增 Intrinsic 指令
 
 | GLSL 函数签名 | SPIR-V 指令 | Opcode |
 |--------------|------------|--------|
-| void cp_async_tensor_global_shared(shared int[] dstMem, tensorMapXD tensorSharp, ivecX coord) | OpCpAsyncTensorGlobalShared | 6470 |
-| void cp_async_commit_group() | OpCpAsyncCommitGroup | 6474 |
-| void cp_async_wait_group(int N) | OpCpAsyncWaitGroup | 6475 |
-| void barrier_arrive(int id, int n) | OpBarrierArrive | 6476 |
-| void barrier_wait(int id, int n) | OpBarrierWait | 6477 |
+| void cp_async_tensor_global_shared(shared int[] dstMem, tensorMapXD tensorSharp, ivecX coord) | OpCpAsyncTensorGlobalSharedHW | 6614 |
+| void cp_async_commit_group() | OpCpAsyncCommitGroupHW | 6615 |
+| void cp_async_wait_group(int N) | OpCpAsyncWaitGroupHW | 6616 |
+| void barrier_arrive(int id, int n) | OpBarrierArriveHW | 6617 |
+| void barrier_wait(int id, int n) | OpBarrierWaitHW | 6618 |
 
 不需要新增 SPIR-V Capability，归属扩展 `SPV_HW_neural_shader`（GLSL 输出 `GL_HW_neural_shader`）。
 
@@ -41,47 +38,48 @@ cp-async 与 shuffle 系列指令共用此扩展。SPIRV-Cross 在发射相关�
 
 ## 二、指令格式
 
-### 2.1 OpTypeTensorMap（类型声明）
+### 2.1 OpTypeTensorMapHW（类型声明）
 
 ```
-| 3 | 6466 | Result <id> | dimensions (literal: 1/2/3/4) |
+| 3 | 6613 | Result <id> | dimensions (literal: 1/2/3/4) |
 ```
 
 - hasResult = true, hasResultType = false
-- dimensions: 1 ~ 5，表示张量映射的维度（其中 5D 为预留类型，见 1.1 节）
+- dimensions: 1 ~ 4，表示张量映射的维度
 
-### 2.2 OpCpAsyncTensorGlobalShared（异步拷贝）
+### 2.2 OpCpAsyncTensorGlobalSharedHW（异步拷贝）
 
 ```
-| 4+ | 6470 | <id> dstMem | <id> tensorMap | <id> coord |
+| 5+ | 6614 | dimensions | <id> dstMem | <id> tensorMap | <id> coord |
 ```
 
 - hasResult = false, hasResultType = false
 - dstMem: 目标共享内存指针
+- dimensions: 1 ~ 4，表示张量映射的维度
 - tensorMap: TensorMap 变量（tensorMap1D/2D/3D/4D）
 - coord: 坐标，类型与维度匹配（int / ivec2 / ivec3 / ivec4）
 
-### 2.3 OpCpAsyncCommitGroup（提交异步组）
+### 2.3 OpCpAsyncCommitGroupHW（提交异步组）
 
 ```
-| 1 | 6474 |
-```
-
-- hasResult = false, hasResultType = false
-
-### 2.4 OpCpAsyncWaitGroup（等待异步组）
-
-```
-| 2 | 6475 | <id> N |
+| 1 | 6615 |
 ```
 
 - hasResult = false, hasResultType = false
-- N: 等待的组数
 
-### 2.5 OpBarrierArrive / OpBarrierWait（屏障同步）
+### 2.4 OpCpAsyncWaitGroupHW（等待异步组）
 
 ```
-| 3 | 6476/6477 | <id> barrier_id | <id> barrier_n |
+| 2 | 6616 | <id> N |
+```
+
+- hasResult = false, hasResultType = false
+- N: 等待的组数，是变量id
+
+### 2.5 OpBarrierArriveHW / OpBarrierWaitHW（屏障同步）
+
+```
+| 3 | 6617/6618 | <id> barrier_id | <id> barrier_n |
 ```
 
 - hasResult = false, hasResultType = false
@@ -97,28 +95,29 @@ cp-async 与 shuffle 系列指令共用此扩展。SPIRV-Cross 在发射相关�
 | 文件 | 修改内容 |
 |------|----------|
 | `spirv_common.hpp` | 添加 `SPIRType::TensorMap` basetype 和 `ext.tensorMap.dimensions` 字段 |
-| `spirv.h` / `spirv.hpp` | 添加 opcode 定义（6466-6477）、HasResultAndType、名称字符串 |
-| `spirv_parser.cpp` | 添加 `OpTypeTensorMap` 解析，设置 basetype=TensorMap，存储 dimensions |
+| `spirv.h` / `spirv.hpp` | 添加 opcode 定义（6613-6618）、HasResultAndType、名称字符串 |
+| `spirv_parser.cpp` | 添加 `OpTypeTensorMapHW` 解析，设置 basetype=TensorMap，存储 dimensions |
 | `spirv_glsl.cpp` | 添加 `type_to_glsl` 的 TensorMap case 和 5 条指令的 GLSL 发射 |
 
 ### 3.2 类型发射
 
 ```cpp
 case SPIRType::TensorMap:
+    require_extension_internal("GL_HW_neural_shader");
     return join("tensorMap", type.ext.tensorMap.dimensions, "D");
 ```
 
-根据 dimensions 值（1/2/3/4/5）生成 `tensorMap1D` / `tensorMap2D` / `tensorMap3D` / `tensorMap4D` / `tensorMap5D`。`tensorMap5D` 仅在类型被引用时才会渲染（当前无 5D cp_async 重载，故通常不出现于输出）。
+根据 dimensions 值（1/2/3/4）生成 `tensorMap1D` / `tensorMap2D` / `tensorMap3D` / `tensorMap4D`。
 
 ### 3.3 指令发射
 
 所有 cp-async 指令均为 void 返回，直接 `statement()` 输出函数调用：
 
-- `OpCpAsyncTensorGlobalShared` → `cp_async_tensor_global_shared(dstMem, tensorMap, coord);`
-- `OpCpAsyncCommitGroup` → `cp_async_commit_group();`
-- `OpCpAsyncWaitGroup` → `cp_async_wait_group(N);`
-- `OpBarrierArrive` → `barrier_arrive(id, n);`
-- `OpBarrierWait` → `barrier_wait(id, n);`
+- `OpCpAsyncTensorGlobalSharedHW` → `cp_async_tensor_global_shared(dstMem, tensorMap, coord);`（首操作数 `dimensions` 为字面量，不输出到 GLSL）
+- `OpCpAsyncCommitGroupHW` → `cp_async_commit_group();`
+- `OpCpAsyncWaitGroupHW` → `cp_async_wait_group(N);`（N 为变量 id）
+- `OpBarrierArriveHW` → `barrier_arrive(id, n);`
+- `OpBarrierWaitHW` → `barrier_wait(id, n);`
 
 ---
 
@@ -130,42 +129,42 @@ case SPIRType::TensorMap:
 |--------|----------|----------|
 | `test_hw_cp_async.spv` | `gen_cp_async_test` | TensorMap1D/2D 类型、cp_async_tensor_global_shared、cp_async_commit_group、cp_async_wait_group、barrier_arrive、barrier_wait |
 
-### 4.2 OpCpAsyncTensorGlobalShared（1D）
+### 4.2 OpCpAsyncTensorGlobalSharedHW（1D）
 
 **期望 GLSL 输出**：
 ```glsl
 cp_async_tensor_global_shared(data._m0[0u], tensorMap1D _20, 0u);
 ```
 
-### 4.3 OpCpAsyncTensorGlobalShared（2D）
+### 4.3 OpCpAsyncTensorGlobalSharedHW（2D）
 
 **期望 GLSL 输出**：
 ```glsl
 cp_async_tensor_global_shared(data._m0[0u], tensorMap2D _21, ivec2(0));
 ```
 
-### 4.4 OpCpAsyncCommitGroup
+### 4.4 OpCpAsyncCommitGroupHW
 
 **期望 GLSL 输出**：
 ```glsl
 cp_async_commit_group();
 ```
 
-### 4.5 OpCpAsyncWaitGroup
+### 4.5 OpCpAsyncWaitGroupHW
 
 **期望 GLSL 输出**：
 ```glsl
 cp_async_wait_group(0);
 ```
 
-### 4.6 OpBarrierArrive
+### 4.6 OpBarrierArriveHW
 
 **期望 GLSL 输出**：
 ```glsl
 barrier_arrive(0, 1);
 ```
 
-### 4.7 OpBarrierWait
+### 4.7 OpBarrierWaitHW
 
 **期望 GLSL 输出**：
 ```glsl
