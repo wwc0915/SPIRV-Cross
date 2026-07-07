@@ -373,3 +373,16 @@ uint32_t shuffle_fill_down(uint32_t src, uint32_t fill, int32_t shift);
 
 详细设计文档：
 - [OpShuffleFillDown 设计文档](op-shuffle-fill-down-design.md)
+
+## [[reg_control]]
+我们在SPV的OpSelectionMerge上加了一个枚举Relreg，对应的glsl签名是[[reg_control]]，以下是要还原的glsl代码：
+```
+[[reg_control]] if (idx == 0) {
+    producer();
+} else {
+    consumer();
+}
+```
+
+详细设计文档：
+- [[[reg_control]] 设计文档](op-reg-control-design.md)

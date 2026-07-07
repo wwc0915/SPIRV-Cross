@@ -47,6 +47,13 @@ OpTypeTensorMap = 6466; OpCpAsyncTensorGlobalShared = 6470
 OpCpAsyncCommitGroup = 6474; OpCpAsyncWaitGroup = 6475
 OpBarrierArrive = 6476; OpBarrierWait = 6477
 OpShuffleIndex = 6478; OpBytePermute = 6479; OpShuffleFillDown = 6480
+OpTypeBool = 20; OpIEqual = 170
+OpSelectionMerge = 247; OpBranch = 249; OpBranchConditional = 250
+
+# SelectionControl masks
+SelectionControlFlattenMask = 0x1
+SelectionControlDontFlattenMask = 0x2
+SelectionControlRelregMask = 0x4
 
 StorageClassStorageBuffer = 12
 DecorationBlock = 2; DecorationBinding = 33; DecorationDescriptorSet = 34
@@ -1961,6 +1968,80 @@ def gen_memops_test(outfile):
         f.write(bytes(data))
     print(f"Generated: {len(data)} bytes -> {outfile}")
 
+def gen_reg_control_test(outfile):
+    """Generate test for [[reg_control]]: an if-else whose OpSelectionMerge
+    carries the Relreg mask bit (0x4). The condition is loaded from an input
+    buffer so the if-else survives in the GLSL output."""
+    void_t = 1; func_t = 2; main_f = 3; uint_t = 4; bool_t = 5
+    uint_ptr_sb = 6; rtarray_t = 7; block_t = 8; block_ptr_t = 9
+    in_var = 10; out_var = 11
+    c0 = 12; c1 = 13; c2 = 14
+    label_entry = 15; label_true = 16; label_false = 17; label_merge = 18
+    ptr_in0 = 19; idx = 20; cond = 21; ptr_out0 = 22
+
+    BOUND = 23
+
+    out = b''
+    out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
+    out += inst(OpCapability, 1)  # Shader
+    out += inst(OpMemoryModel, 0, 1)
+    en = str_words("main")
+    out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
+    out += inst(OpExecutionMode, main_f, 17, 16, 1, 1)
+    for target, name in [(main_f, "main"), (in_var, "input"), (out_var, "output"), (uint_t, "uint")]:
+        nw = str_words(name)
+        out += word(((1 + len(nw) + 1) << 16) | OpName) + word(target) + b''.join(word(w) for w in nw)
+    out += inst(OpDecorate, block_t, DecorationBlock)
+    out += inst(OpMemberDecorate, block_t, 0, DecorationOffset, 0)
+    out += inst(OpDecorate, rtarray_t, DecorationArrayStride, 4)
+    out += inst(OpDecorate, in_var, DecorationBinding, 0)
+    out += inst(OpDecorate, in_var, DecorationDescriptorSet, 0)
+    out += inst(OpDecorate, out_var, DecorationBinding, 1)
+    out += inst(OpDecorate, out_var, DecorationDescriptorSet, 0)
+    # Types
+    out += inst(OpTypeVoid, void_t)
+    out += inst(OpTypeInt, uint_t, 32, 0)
+    out += inst(OpTypeBool, bool_t)
+    out += inst(OpTypeFunction, func_t, void_t)
+    out += inst(OpTypePointer, uint_ptr_sb, StorageClassStorageBuffer, uint_t)
+    out += inst(OpTypeRuntimeArray, rtarray_t, uint_t)
+    out += inst(OpTypeStruct, block_t, rtarray_t)
+    out += inst(OpTypePointer, block_ptr_t, StorageClassStorageBuffer, block_t)
+    # Constants
+    out += inst(OpConstant, uint_t, c0, 0)
+    out += inst(OpConstant, uint_t, c1, 1)
+    out += inst(OpConstant, uint_t, c2, 2)
+    # Variables
+    out += inst(OpVariable, block_ptr_t, in_var, StorageClassStorageBuffer)
+    out += inst(OpVariable, block_ptr_t, out_var, StorageClassStorageBuffer)
+    # Function
+    out += inst(OpFunction, void_t, main_f, 0, func_t)
+    # Entry block
+    out += inst(OpLabel, label_entry)
+    out += inst(OpAccessChain, uint_ptr_sb, ptr_in0, in_var, c0, c0)
+    out += inst(OpLoad, uint_t, idx, ptr_in0)
+    out += inst(OpIEqual, bool_t, cond, idx, c0)
+    out += inst(OpAccessChain, uint_ptr_sb, ptr_out0, out_var, c0, c0)
+    out += inst(OpSelectionMerge, label_merge, SelectionControlRelregMask)
+    out += inst(OpBranchConditional, cond, label_true, label_false)
+    # True block
+    out += inst(OpLabel, label_true)
+    out += inst(OpStore, ptr_out0, c1)
+    out += inst(OpBranch, label_merge)
+    # False block
+    out += inst(OpLabel, label_false)
+    out += inst(OpStore, ptr_out0, c2)
+    out += inst(OpBranch, label_merge)
+    # Merge block
+    out += inst(OpLabel, label_merge)
+    out += inst(OpReturn)
+    out += inst(OpFunctionEnd)
+    data = bytearray(out)
+    struct.pack_into('<I', data, 12, BOUND)
+    with open(outfile, 'wb') as f:
+        f.write(bytes(data))
+    print(f"Generated: {len(data)} bytes -> {outfile}")
+
 if __name__ == '__main__':
     import os
     outfile = sys.argv[1] if len(sys.argv) > 1 else 'test_hw_length.spv'
@@ -1999,6 +2080,8 @@ if __name__ == '__main__':
         gen_byte_permute_test(outfile)
     elif 'shuffle_fill_down' in base:
         gen_shuffle_fill_down_test(outfile)
+    elif 'reg_control' in base:
+        gen_reg_control_test(outfile)
     elif 'memops' in base:
         gen_memops_test(outfile)
     elif 'cp_async' in base:

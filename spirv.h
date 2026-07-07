@@ -797,6 +797,7 @@ typedef enum SpvBuiltIn_ {
 typedef enum SpvSelectionControlShift_ {
     SpvSelectionControlFlattenShift = 0,
     SpvSelectionControlDontFlattenShift = 1,
+    SpvSelectionControlRelregShift = 2,
     SpvSelectionControlMax = 0x7fffffff,
 } SpvSelectionControlShift;
 
@@ -804,6 +805,7 @@ typedef enum SpvSelectionControlMask_ {
     SpvSelectionControlMaskNone = 0,
     SpvSelectionControlFlattenMask = 0x00000001,
     SpvSelectionControlDontFlattenMask = 0x00000002,
+    SpvSelectionControlRelregMask = 0x00000004,
 } SpvSelectionControlMask;
 
 typedef enum SpvLoopControlShift_ {

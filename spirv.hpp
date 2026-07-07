@@ -793,6 +793,7 @@ enum BuiltIn {
 enum SelectionControlShift {
     SelectionControlFlattenShift = 0,
     SelectionControlDontFlattenShift = 1,
+    SelectionControlRelregShift = 2,
     SelectionControlMax = 0x7fffffff,
 };
 
@@ -800,6 +801,7 @@ enum SelectionControlMask {
     SelectionControlMaskNone = 0,
     SelectionControlFlattenMask = 0x00000001,
     SelectionControlDontFlattenMask = 0x00000002,
+    SelectionControlRelregMask = 0x00000004,
 };
 
 enum LoopControlShift {

@@ -17520,9 +17520,11 @@ void CompilerGLSL::branch(BlockID from, uint32_t cond, BlockID true_block, Block
 	if (from_block.hint == SPIRBlock::HintFlatten || from_block.hint == SPIRBlock::HintDontFlatten)
 		emit_block_hints(from_block);
 
+	auto prefix = from_block.reg_control ? "[[reg_control]] " : "";
+
 	if (true_block_needs_code)
 	{
-		statement("if (", to_expression(cond), ")");
+		statement(prefix, "if (", to_expression(cond), ")");
 		begin_scope();
 		branch(from, true_block);
 		end_scope();
@@ -17538,7 +17540,7 @@ void CompilerGLSL::branch(BlockID from, uint32_t cond, BlockID true_block, Block
 	else if (false_block_needs_code)
 	{
 		// Only need false path, use negative conditional.
-		statement("if (!", to_enclosed_expression(cond), ")");
+		statement(prefix, "if (!", to_enclosed_expression(cond), ")");
 		begin_scope();
 		branch(from, false_block);
 		end_scope();

@@ -1242,6 +1242,8 @@ void Parser::parse(const Instruction &instruction)
 				current_block->hint = SPIRBlock::HintFlatten;
 			else if (ops[1] & SelectionControlDontFlattenMask)
 				current_block->hint = SPIRBlock::HintDontFlatten;
+			if (ops[1] & SelectionControlRelregMask)
+				current_block->reg_control = true;
 		}
 		break;
 	}

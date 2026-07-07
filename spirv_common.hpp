@@ -876,6 +876,7 @@ struct SPIRBlock : IVariant
 	Terminator terminator = Unknown;
 	Merge merge = MergeNone;
 	Hints hint = HintNone;
+	bool reg_control = false;
 	BlockID next_block = 0;
 	BlockID merge_block = 0;
 	BlockID continue_block = 0;
