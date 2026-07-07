@@ -1581,6 +1581,7 @@ void CompilerMSL::emit_entry_point_declarations()
 
 string CompilerMSL::compile()
 {
+	reject_hw_neural_extensions();
 	replace_illegal_entry_point_names();
 	ir.fixup_reserved_names();
 

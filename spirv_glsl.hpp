@@ -998,6 +998,7 @@ protected:
 	void handle_invalid_expression(uint32_t id);
 	void force_temporary_and_recompile(uint32_t id);
 	void find_static_extensions();
+	void reject_hw_neural_extensions();
 
 	uint32_t consume_temporary_in_precision_context(uint32_t type_id, uint32_t id, Options::Precision precision);
 	std::unordered_map<uint32_t, uint32_t> temporary_to_mirror_precision_alias;

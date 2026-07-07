@@ -637,6 +637,20 @@ void CompilerGLSL::find_static_extensions()
 			barycentric_is_nv = true;
 }
 
+void CompilerGLSL::reject_hw_neural_extensions()
+{
+	// HW neural extensions only have GLSL intrinsics. Reject them early for non-GLSL backends
+	// (MSL/HLSL/CPP/Reflect) so they fail-fast with a clear message instead of silently emitting
+	// GLSL intrinsics via the base emit_instruction fallback.
+	for (auto &ext : ir.declared_extensions)
+		if (ext.rfind("SPV_HW_", 0) == 0)
+			SPIRV_CROSS_THROW(ext + " extension is only supported by the GLSL backend.");
+
+	for (auto &cap : ir.declared_capabilities)
+		if (cap == CapabilityCooperativeMatrixHW || cap == CapabilityCooperativeVectorHW)
+			SPIRV_CROSS_THROW("HW neural matrix/vector capability is only supported by the GLSL backend.");
+}
+
 void CompilerGLSL::require_polyfill(Polyfill polyfill, bool relaxed)
 {
 	uint32_t &polyfills = (relaxed && (options.es || options.vulkan_semantics)) ?

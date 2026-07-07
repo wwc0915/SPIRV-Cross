@@ -271,6 +271,7 @@ void CompilerReflection::set_format(const std::string &format)
 
 string CompilerReflection::compile()
 {
+	reject_hw_neural_extensions();
 	json_stream = std::make_shared<simple_json::Stream>();
 	json_stream->set_current_locale_radix_character(current_locale_radix_character);
 	json_stream->begin_json_object();

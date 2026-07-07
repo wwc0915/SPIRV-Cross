@@ -390,3 +390,11 @@ uint32_t shuffle_fill_down(uint32_t src, uint32_t fill, int32_t shift);
 
 详细设计文档：
 - [[[reg_control]] 设计文档](op-reg-control-design.md)
+
+---
+
+## 后端兼容性
+上述 HW 扩展（`SPV_HW_neural_matrix` / `SPV_HW_cooperative_vector` / `SPV_HW_neural_shader`）均为 GLSL 专属。转 MSL/HLSL/C++/Reflect 时需拒绝并报错。
+
+详细设计文档：
+- [HW 扩展后端拒绝 设计文档](hw-extensions-backend-reject-design.md)

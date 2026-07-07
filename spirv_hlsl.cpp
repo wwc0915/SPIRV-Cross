@@ -6766,6 +6766,7 @@ void CompilerHLSL::validate_shader_model()
 
 string CompilerHLSL::compile()
 {
+	reject_hw_neural_extensions();
 	ir.fixup_reserved_names();
 
 	// Do not deal with ES-isms like precision, older extensions and such.
