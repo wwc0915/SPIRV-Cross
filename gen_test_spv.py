@@ -17,8 +17,14 @@ def str_words(s):
     b += b'\x00' * ((4 - len(b) % 4) % 4)
     return [struct.unpack('<I', b[i:i+4])[0] for i in range(0, len(b), 4)]
 
+def op_extension(name):
+    nw = str_words(name)
+    wc = 1 + len(nw)
+    return word((wc << 16) | OpExtension) + b''.join(word(w) for w in nw)
+
 # Opcodes
 OpCapability = 17; OpExtInstImport = 11; OpMemoryModel = 14
+OpExtension = 10
 OpEntryPoint = 15; OpExecutionMode = 16; OpName = 5
 OpDecorate = 71; OpMemberDecorate = 72; OpTypeVoid = 19; OpTypeFloat = 22
 OpTypeInt = 21; OpTypeVector = 23; OpTypeFunction = 33; OpTypePointer = 32
@@ -47,6 +53,8 @@ OpTypeTensorMap = 6466; OpCpAsyncTensorGlobalShared = 6470
 OpCpAsyncCommitGroup = 6474; OpCpAsyncWaitGroup = 6475
 OpBarrierArrive = 6476; OpBarrierWait = 6477
 OpShuffleIndex = 6478; OpBytePermute = 6479; OpShuffleFillDown = 6480
+
+HW_NEURAL_SHADER_EXT = "SPV_HW_neural_shader"
 OpTypeBool = 20; OpIEqual = 170
 OpSelectionMerge = 247; OpBranch = 249; OpBranchConditional = 250
 
@@ -1653,6 +1661,7 @@ def gen_cp_async_test(outfile):
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
     out += inst(OpCapability, 1)  # Shader
+    out += op_extension(HW_NEURAL_SHADER_EXT)
     out += inst(OpMemoryModel, 0, 1)
     en = str_words("main")
     out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
@@ -1739,6 +1748,7 @@ def gen_shuffle_index_test(outfile):
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
     out += inst(OpCapability, 1)  # Shader
+    out += op_extension(HW_NEURAL_SHADER_EXT)
     out += inst(OpMemoryModel, 0, 1)
     en = str_words("main")
     out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
@@ -1788,6 +1798,7 @@ def gen_byte_permute_test(outfile):
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
     out += inst(OpCapability, 1)  # Shader
+    out += op_extension(HW_NEURAL_SHADER_EXT)
     out += inst(OpMemoryModel, 0, 1)
     en = str_words("main")
     out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)
@@ -1838,6 +1849,7 @@ def gen_shuffle_fill_down_test(outfile):
     out = b''
     out += word(0x07230203) + word(0x00010600) + word(0) + word(BOUND) + word(0)
     out += inst(OpCapability, 1)  # Shader
+    out += op_extension(HW_NEURAL_SHADER_EXT)
     out += inst(OpMemoryModel, 0, 1)
     en = str_words("main")
     out += word(((2 + len(en) + 1) << 16) | OpEntryPoint) + word(5) + word(main_f) + b''.join(word(w) for w in en)

@@ -4,6 +4,15 @@
 
 新增 `TensorMap` 变量类型和 `cp-async` 系列同步指令，用于支持异步内存拷贝和屏障操作。
 
+### 1.0 扩展
+
+| 项 | 值 |
+|----|----|
+| OpExtension | `SPV_HW_neural_shader` |
+| GLSL 扩展 | `GL_HW_neural_shader` |
+
+cp-async 与 shuffle 系列指令共用此扩展。SPIRV-Cross 在发射相关指令或 `TensorMap` 类型时通过 `require_extension_internal("GL_HW_neural_shader")` 声明扩展（usage-driven，与 `GL_HW_neural_matrix`/`GL_HW_cooperative_vector` 一致）。不需要新增 SPIR-V Capability。
+
 ### 1.1 新增变量类型
 
 | GLSL 类型 | SPIR-V 指令 | Opcode |
@@ -26,7 +35,7 @@
 | void barrier_arrive(int id, int n) | OpBarrierArrive | 6476 |
 | void barrier_wait(int id, int n) | OpBarrierWait | 6477 |
 
-不需要新增 SPIR-V Capability。
+不需要新增 SPIR-V Capability，归属扩展 `SPV_HW_neural_shader`（GLSL 输出 `GL_HW_neural_shader`）。
 
 ---
 

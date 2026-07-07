@@ -15761,6 +15761,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 3)
 			SPIRV_CROSS_THROW("Not enough operands for OpCpAsyncTensorGlobalShared.");
 
+		require_extension_internal("GL_HW_neural_shader");
 		uint32_t dst_ptr = ops[0];
 		uint32_t tensor_map = ops[1];
 		uint32_t coord = ops[2];
@@ -15772,6 +15773,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 	case OpCpAsyncCommitGroup:
 	{
+		require_extension_internal("GL_HW_neural_shader");
 		statement("cp_async_commit_group();");
 		break;
 	}
@@ -15781,6 +15783,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 1)
 			SPIRV_CROSS_THROW("Not enough operands for OpCpAsyncWaitGroup.");
 
+		require_extension_internal("GL_HW_neural_shader");
 		uint32_t n = ops[0];
 		statement("cp_async_wait_group(", to_expression(n), ");");
 		break;
@@ -15791,6 +15794,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 2)
 			SPIRV_CROSS_THROW("Not enough operands for OpBarrierArrive.");
 
+		require_extension_internal("GL_HW_neural_shader");
 		uint32_t barrier_id = ops[0];
 		uint32_t barrier_n = ops[1];
 		statement("barrier_arrive(", to_expression(barrier_id), ", ", to_expression(barrier_n), ");");
@@ -15802,6 +15806,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 2)
 			SPIRV_CROSS_THROW("Not enough operands for OpBarrierWait.");
 
+		require_extension_internal("GL_HW_neural_shader");
 		uint32_t barrier_id = ops[0];
 		uint32_t barrier_n = ops[1];
 		statement("barrier_wait(", to_expression(barrier_id), ", ", to_expression(barrier_n), ");");
@@ -15813,6 +15818,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 4)
 			SPIRV_CROSS_THROW("Not enough operands for OpShuffleIndex.");
 
+		require_extension_internal("GL_HW_neural_shader");
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		uint32_t value = ops[2];
@@ -15831,6 +15837,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 5)
 			SPIRV_CROSS_THROW("Not enough operands for OpBytePermute.");
 
+		require_extension_internal("GL_HW_neural_shader");
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		uint32_t src0 = ops[2];
@@ -15852,6 +15859,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 5)
 			SPIRV_CROSS_THROW("Not enough operands for OpShuffleFillDown.");
 
+		require_extension_internal("GL_HW_neural_shader");
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		uint32_t src = ops[2];
@@ -16752,6 +16760,7 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 	}
 
 	case SPIRType::TensorMap:
+		require_extension_internal("GL_HW_neural_shader");
 		return join("tensorMap", type.ext.tensorMap.dimensions, "D");
 
 	case SPIRType::Void:

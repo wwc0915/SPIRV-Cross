@@ -14,7 +14,7 @@ int32_t shufidx(int32_t val, int32_t idx);
 - `idx`：源 thread 索引，类型 `int32`，范围 `0-31`。
 - 返回值：来自 `idx` 线程的 `val`，类型与 `val` 相同。
 
-不需要新增 SPIR-V Capability，也不需要新增变量类型。
+归属扩展 `SPV_HW_neural_shader`（GLSL 输出 `GL_HW_neural_shader`），与 cp-async 系列指令共用此扩展。不需要新增 SPIR-V Capability，也不需要新增变量类型。
 
 ---
 

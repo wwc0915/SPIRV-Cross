@@ -15,7 +15,7 @@ uint32_t bytePrmt(uint32_t src0, uint32_t src1, uint32_t mask);
 - `mask`：选择掩码，决定哪些字节写入输出，范围 `0x0000-0x7777`，类型同上。
 - 返回值：按 mask 重排得到的 32-bit 无符号整数。
 
-不需要新增 SPIR-V Capability，也不需要新增变量类型。
+归属扩展 `SPV_HW_neural_shader`（GLSL 输出 `GL_HW_neural_shader`），与 cp-async 系列指令共用此扩展。不需要新增 SPIR-V Capability，也不需要新增变量类型。
 
 ---
 

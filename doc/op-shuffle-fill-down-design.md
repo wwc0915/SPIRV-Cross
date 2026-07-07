@@ -15,7 +15,7 @@ uint32_t shuffle_fill_down(uint32_t src, uint32_t fill, int32_t shift);
 - `shift`：向下移位的量（粒度 32-bit），范围 `0-31`，类型 `OpTypeInt(32-bit signed)`。
 - 返回值：shuffle down 后的 32-bit 无符号整数。
 
-不需要新增 SPIR-V Capability，也不需要新增变量类型。
+归属扩展 `SPV_HW_neural_shader`（GLSL 输出 `GL_HW_neural_shader`），与 cp-async 系列指令共用此扩展。不需要新增 SPIR-V Capability，也不需要新增变量类型。
 
 ---
 

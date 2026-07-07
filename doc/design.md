@@ -310,6 +310,9 @@ void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 详细设计文档：
 - [CoopVecHW 位操作指令设计文档](op-cooperative-vector-bit-hw-design.md)
 ## cp-async
+OpExtension:
+SPV_HW_neural_shader
+
 需要新增的intrinsic
 | glsl | spv |
 | -- | -- |
@@ -327,6 +330,7 @@ void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 详细设计文档：
 - [CpAsync 与 TensorMap 设计文档](cp-async-design.md)
 ## OpShuffleIndex
+归属扩展 SPV_HW_neural_shader（GLSL 输出 `GL_HW_neural_shader`），与 cp-async 共用同一扩展。
 将Index线程的val数据赋值到目标线程
 | 5 | 6478 | \<id\> Result Type | Result \<id\> | \<id\> Value | \<id\> Index |
 | -- | -- | -- | -- | -- | -- |
