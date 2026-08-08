@@ -2,7 +2,7 @@
 
 ## 一、概述
 
-`OpTypeCooperativeVectorHW` 是 SPV_HW_cooperative_vector 扩展中的类型声明指令，用于声明一个新的协作向量类型，其包含请求的标量类型的 Component Count 个组件。
+`OpTypeCooperativeVectorHW` 是 SPV_HW_neural_shader 扩展中的类型声明指令，用于声明一个新的协作向量类型，其包含请求的标量类型的 Component Count 个组件。
 
 ---
 
@@ -53,7 +53,7 @@ enum ComponentTypeHW {
 ### 3.1 GLSL 扩展声明
 
 ```glsl
-#extension GL_HW_cooperative_vector : require
+#extension GL_HW_neural_shader : require
 ```
 
 ### 3.2 GLSL 类型声明
@@ -124,7 +124,7 @@ case OpTypeCooperativeVectorHW:
 // type_to_glsl() 中的类型名称生成
 case SPIRType::CoopVecHW:
 {
-    require_extension_internal("GL_HW_cooperative_vector");
+    require_extension_internal("GL_HW_neural_shader");
     string component_type_str = type_to_glsl(get<SPIRType>(type.ext.coopVecHW.component_type_id));
     string count = to_expression(type.ext.coopVecHW.component_count_id);
     return join("coopvecHW<", component_type_str, ", ", count, ">");
@@ -154,7 +154,7 @@ if (type.basetype == SPIRType::CoopMatHW || type.basetype == SPIRType::CoopVecHW
 **GLSL输入**：
 ```glsl
 #version 450
-#extension GL_HW_cooperative_vector : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 
@@ -171,7 +171,7 @@ void main() {
 **期望输出**：
 ```glsl
 #version 450
-#extension GL_HW_cooperative_vector : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 

@@ -2,7 +2,7 @@
 
 ## 一、概述
 
-`OpCooperativeVectorMatrixMulHW` 是 SPV_HW_cooperative_vector 扩展中的指令，用于协作向量与矩阵相乘（无偏移）。
+`OpCooperativeVectorMatrixMulHW` 是 SPV_HW_neural_shader 扩展中的指令，用于协作向量与矩阵相乘（无偏移）。
 
 ---
 
@@ -43,7 +43,7 @@ CapabilityCooperativeVectorHW = 6607
 ### 3.1 GLSL 扩展声明
 
 ```glsl
-#extension GL_HW_cooperative_vector : require
+#extension GL_HW_neural_shader : require
 ```
 
 ### 3.2 GLSL 函数签名
@@ -61,7 +61,7 @@ void coopVecMatMulHW(out coopvecHW m, coopvecHW v, coopmatHW mi);
 **GLSL 输出** (SPIRV-Cross 生成):
 ```glsl
 #version 450
-#extension GL_HW_cooperative_vector : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 

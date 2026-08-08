@@ -6,8 +6,8 @@
 
 | 扩展 (OpExtension) | Capability | GLSL 扩展 | 覆盖范围 |
 |--------------------|------------|-----------|----------|
-| `SPV_HW_neural_matrix` | `CooperativeMatrixHW = 6600` | `GL_HW_neural_matrix` | coopmatHW 类型与指令 |
-| `SPV_HW_cooperative_vector` | `CooperativeVectorHW = 6607` | `GL_HW_cooperative_vector` | coopvecHW 类型与指令 |
+| `SPV_HW_neural_shader` | `CooperativeMatrixHW = 6600` | `GL_HW_neural_shader` | coopmatHW 类型与指令 |
+| `SPV_HW_neural_shader` | `CooperativeVectorHW = 6607` | `GL_HW_neural_shader` | coopvecHW 类型与指令 |
 | `SPV_HW_neural_shader` | （无 capability） | `GL_HW_neural_shader` | cp-async / shuffle / TensorMap |
 
 这些扩展只在 GLSL 后端有对应的 intrinsic 实现。当用户把含有这些扩展/capability 的
@@ -27,7 +27,7 @@ SPIR-V 二进制转成非 GLSL 语言（MSL、HLSL、C++、Reflect）时，应�
 两者取并集：
 
 - `SPV_HW_neural_shader` 只声明 `OpExtension`（无 capability）→ 由扩展前缀检测命中。
-- `SPV_HW_neural_matrix` / `SPV_HW_cooperative_vector` 的测试只声明 `OpCapability 6600`/`6607`
+- `SPV_HW_neural_shader` / `SPV_HW_neural_shader` 的测试只声明 `OpCapability 6600`/`6607`
   （未声明 `OpExtension`）→ 由 capability 检测命中。
 - 任意一种声明方式都能被捕获，无需修改既有测试。
 

@@ -11,7 +11,7 @@
 | OpExtension | `SPV_HW_neural_shader` |
 | GLSL 扩展 | `GL_HW_neural_shader` |
 
-cp-async 与 shuffle 系列指令共用此扩展。SPIRV-Cross 在发射相关指令或 `TensorMap` 类型时通过 `require_extension_internal("GL_HW_neural_shader")` 声明扩展（usage-driven，与 `GL_HW_neural_matrix`/`GL_HW_cooperative_vector` 一致）。不需要新增 SPIR-V Capability。
+cp-async 与 shuffle 系列指令共用此扩展。SPIRV-Cross 在发射相关指令或 `TensorMap` 类型时通过 `require_extension_internal("GL_HW_neural_shader")` 声明扩展（usage-driven，与 `GL_HW_neural_shader`/`GL_HW_neural_shader` 一致）。不需要新增 SPIR-V Capability。
 
 ### 1.1 新增变量类型
 

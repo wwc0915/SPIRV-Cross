@@ -1,9 +1,9 @@
-# 添加扩展SPV_HW_neural_matrix
+# 添加扩展SPV_HW_neural_shader
 ## coopmatHW
 ### 1. 枚举
 ```
 OpExtension:
-SPV_HW_neural_matrix
+SPV_HW_neural_shader
 
 Capability:
 6600-CooperativeMatrixHW
@@ -174,7 +174,7 @@ coopmatHW<T, M, N> coopMatReduceHW(coopmat<T, M, N> mat, int reduceMask, int com
 ### 3.1 Enumerants
 | 分类 | 名称 | 值 | 说明 |
 | -- | -- | -- | -- |
-| OpExtension | SPV_HW_cooperative_vector | | |
+| OpExtension | SPV_HW_neural_shader | | |
 | Capability | CooperativeVectorHW | 6607 | 启用协作向量类型以及操作这些类型的指令 |
 | Cooperative Vector Matrix Layout | RowMajorHW | 0 | 矩阵行由内存中连续的元素构成 |
 | | ColumnMajorHW | 1 | 矩阵的列由内存中连续的元素构成 |
@@ -394,7 +394,7 @@ uint32_t shuffle_fill_down(uint32_t src, uint32_t fill, int32_t shift);
 ---
 
 ## 后端兼容性
-上述 HW 扩展（`SPV_HW_neural_matrix` / `SPV_HW_cooperative_vector` / `SPV_HW_neural_shader`）均为 GLSL 专属。转 MSL/HLSL/C++/Reflect 时需拒绝并报错。
+上述 HW 扩展（`SPV_HW_neural_shader` / `SPV_HW_neural_shader` / `SPV_HW_neural_shader`）均为 GLSL 专属。转 MSL/HLSL/C++/Reflect 时需拒绝并报错。
 
 详细设计文档：
 - [HW 扩展后端拒绝 设计文档](hw-extensions-backend-reject-design.md)

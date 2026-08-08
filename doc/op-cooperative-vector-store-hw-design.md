@@ -2,7 +2,7 @@
 
 ## 一、概述
 
-`OpCooperativeVectorStoreHW` 是 SPV_HW_cooperative_vector 扩展中的指令，用于将协作向量存储到内存。
+`OpCooperativeVectorStoreHW` 是 SPV_HW_neural_shader 扩展中的指令，用于将协作向量存储到内存。
 
 ---
 
@@ -43,7 +43,7 @@ CapabilityCooperativeVectorHW = 6607
 ### 3.1 GLSL 扩展声明
 
 ```glsl
-#extension GL_HW_cooperative_vector : require
+#extension GL_HW_neural_shader : require
 ```
 
 ### 3.2 GLSL 函数签名
@@ -63,7 +63,7 @@ void coopVecStoreHW(coopvecHW<T, M> v, out volatile coherent ArrayElemTy[] buf, 
 **GLSL 输出** (SPIRV-Cross 生成):
 ```glsl
 #version 450
-#extension GL_HW_cooperative_vector : require
+#extension GL_HW_neural_shader : require
 
 layout(local_size_x = 16) in;
 

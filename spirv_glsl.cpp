@@ -16759,7 +16759,7 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 
 	case SPIRType::CoopMatHW:
 	{
-		require_extension_internal("GL_HW_neural_matrix");
+		require_extension_internal("GL_HW_neural_shader");
 		auto &component_type = get<SPIRType>(type.ext.coopMatHW.component_type_id);
 		uint32_t rows = get_constant(type.ext.coopMatHW.rows_id).scalar();
 		uint32_t cols = get_constant(type.ext.coopMatHW.cols_id).scalar();
@@ -16768,7 +16768,7 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 
 	case SPIRType::CoopVecHW:
 	{
-		require_extension_internal("GL_HW_cooperative_vector");
+		require_extension_internal("GL_HW_neural_shader");
 		auto &component_type = get<SPIRType>(type.ext.coopVecHW.component_type_id);
 		uint32_t count = get_constant(type.ext.coopVecHW.component_count_id).scalar();
 		return join("coopvecHW<", type_to_glsl(component_type), ", ", count, "u>");
