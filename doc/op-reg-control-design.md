@@ -17,7 +17,8 @@
 ```
 
 `[[reg_control]]` 与 `if` 处于同一行，是一个独立于 `flatten`/`dont_flatten` 的硬件属性，
-不走 `GL_EXT_control_flow_attributes` 扩展，也不需要新增 SPIR-V Capability 或变量类型。
+要求 `GL_HW_neural_shader` 扩展。当与 `flatten`/`branch` hint 共存时合并为
+`[[flatten, reg_control]]` / `[[branch, reg_control]]`，同时要求 `GL_EXT_control_flow_attributes`。
 
 ---
 
@@ -63,7 +64,8 @@
 
 既有 `SPIRBlock::hint` 是单值枚举（`HintFlatten`/`HintDontFlatten` 互斥），无法同时表达
 "flatten + reg_control"。`reg_control` 语义上与展平无关，因此采用独立布尔字段 `reg_control`，
-与 `hint` 位级正交，可组合。
+与 `hint` 位级正交，可组合。GLSL 发射时若两者同时存在，合并为 `[[flatten, reg_control]]`
+单个属性说明符。
 
 ### 3.3 解析（spirv_parser.cpp）
 
@@ -93,6 +95,23 @@ case OpSelectionMerge:
 ```cpp
 auto prefix = from_block.reg_control ? "[[reg_control]] " : "";
 
+if (from_block.reg_control)
+    require_extension_internal("GL_HW_neural_shader");
+
+if (from_block.hint == SPIRBlock::HintFlatten || from_block.hint == SPIRBlock::HintDontFlatten)
+{
+    if (from_block.reg_control)
+    {
+        // 合并为 [[flatten, reg_control]] / [[branch, reg_control]]
+        require_extension_internal("GL_EXT_control_flow_attributes");
+        prefix = (from_block.hint == SPIRBlock::HintFlatten)
+                     ? "[[flatten, reg_control]] "
+                     : "[[branch, reg_control]] ";
+    }
+    else
+        emit_block_hints(from_block);
+}
+
 if (true_block_needs_code)
 {
     statement(prefix, "if (", to_expression(cond), ")");
@@ -105,8 +124,9 @@ else if (false_block_needs_code)
 }
 ```
 
-- 不调用 `require_extension_internal`：`[[reg_control]]` 是硬件自定义属性，不属于 `GL_EXT_control_flow_attributes`。
-- `emit_block_hints()` 仍只处理 flatten/branch/unroll，不受影响。
+- `reg_control` 为真时调用 `require_extension_internal("GL_HW_neural_shader")`，因为 `[[reg_control]]` 属于该扩展。
+- 当 `reg_control` 与 `HintFlatten`/`HintDontFlatten` 共存时，合并为 `[[flatten, reg_control]]` 或 `[[branch, reg_control]]` 单个属性说明符（逗号分隔），同时要求 `GL_EXT_control_flow_attributes`——glslang 不接受分开的 `[[flatten]] [[reg_control]]` 两个属性说明符。
+- `reg_control` 为假时，走原有 `emit_block_hints()` 宏路径。
 
 ---
 
@@ -127,6 +147,7 @@ true/false 块；true 块写 `1u`，false 块写 `2u`；merge 块 `OpReturn`。
 
 ```glsl
 #version 450
+#extension GL_HW_neural_shader : require
 layout(local_size_x = 16, local_size_y = 1, local_size_z = 1) in;
 
 void main()

@@ -1,0 +1,204 @@
+@startuml SPIRV-Cross-总体结构图
+!theme plain
+title SPIRV-Cross 总体结构图 (分层 + 编译流水线)
+
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam nodesep 45
+skinparam ranksep 90
+left to right direction
+skinparam padding 8
+
+' ---- 前端输入 ----
+folder "SPIR-V 输入 (二进制 / 字节码)" as Input {
+  file "*.spv" as SpvFile
+  file "spirv.h / spirv.hpp\n(Khronos 官方 SPIR-V 枚举定义)" as SpirvHeaders #DAE8FC
+}
+note bottom of SpirvHeaders
+  HW 修改 (spirv.h / .hpp):
+  SpvOp += 6601~6621
+  Capability += CooperativeVectorHW(6607)
+  SelectionControl += Relreg 位
+end note
+
+' ---- 解析层 ----
+package "解析层 (Parser Layer)" as ParserLayer {
+  component "Parser\n(spirv_parser.cpp/.hpp)" as Parser #DAE8FC
+  component "Instruction / EmbeddedInstruction\n(spirv_common.hpp)" as Instr
+  note right of Parser
+    遍历 SPIR-V 指令流,
+    构建类型/变量/常量/函数/块等
+    Variant 节点, 填充 ParsedIR
+  end note
+  note bottom of Parser
+    HW 修改:
+    + OpTypeCooperativeVectorHW
+    + OpTypeTensorMapHW
+    CoopMatHW 的 use 操作数改为可选
+    + OpConstantCompositeReplicateEXT
+  end note
+}
+
+' ---- 中间表示层 (IR) ----
+package "中间表示层 (ParsedIR)" as IRLayer {
+  component "ParsedIR\n(spirv_cross_parsed_ir.hpp/.cpp)" as ParsedIR
+  database "ids: SmallVector<Variant>\n(按 ID 索引的所有实体)" as IdsVec
+  database "meta: map<ID, Meta>\n(装饰 / 名字 / 成员信息)" as MetaMap
+  database "ids_for_type[TypeCount]\n(按类型分组的 ID 索引)" as TypeIndex
+  database "entry_points\n(入口点 + 执行模型)" as EntryPts
+  database "block_meta / continue_block_to_loop_header\n(控制流元数据)" as BlockMeta
+}
+ParsedIR --> IdsVec
+ParsedIR --> MetaMap
+ParsedIR --> TypeIndex
+ParsedIR --> EntryPts
+ParsedIR --> BlockMeta
+
+' ---- 公共基础设施 ----
+package "公共基础设施 (Common)" as Common {
+  component "Variant / IVariant\n(多态变体 + 对象池)" as Variant
+  component "SPIRType / SPIRVariable / SPIRFunction\nSPIRBlock / SPIRConstant / SPIRExpression ...\n(所有 IR 实体定义)" as Entities #DAE8FC
+  note right of Entities
+    HW 修改 (spirv_common.hpp):
+    SPIRType: BaseType += CoopVecHW/TensorMap,
+             ext += coopVecHW/tensorMap
+    SPIRBlock += reg_control
+    SPIRConstant += replicated
+  end note
+  component "Meta / Decoration\n(装饰、名字、扩展装饰)" as MetaStruct
+  component "Bitset / SmallVector / StringStream\n容器与工具\n(spirv_cross_containers.hpp)" as Containers
+  component "FloatFormatter / Hasher / ValueSaver\n(辅助工具)" as Utils
+}
+
+' ---- 核心编译器 (基类 + 通用反射 API) ----
+package "核心编译器层 (Compiler 基类)" as CoreLayer {
+  component "Compiler\n(spirv_cross.hpp/.cpp)" as Compiler #DAE8FC
+  note bottom of Compiler
+    HW 修改 (spirv_cross.cpp):
+    HW Load/Store 接入变量依赖、
+    接口变量检测、access-chain 归类、
+    块级写跟踪
+  end note
+  component "CFG / DominatorBuilder\n(spirv_cfg.hpp/.cpp)\n(控制流图 + 支配树)" as CFG
+  component "ShaderResources / Resource\nBuiltInResource\n(资源反射查询)" as Resources
+  component "spirv_cross_util\n(工具: 重命名接口变量等)" as Util
+}
+Compiler --> CFG
+Compiler --> Resources
+Compiler ..> Util
+
+' ---- 后端编译器 (语言目标) ----
+package "后端编译器层 (Backends)" as BackendLayer {
+  component "CompilerGLSL\n(spirv_glsl.hpp/.cpp)\nGLSL / ESSL 目标" as GLSL #F8CECC
+  note bottom of GLSL
+    HW 主实现 (spirv_glsl.cpp):
+    type_to_glsl 类型渲染
+    constant_expression 常量构造
+    access_chain 分量访问
+    类型转换 / OpBitcast
+    emit_instruction: 18 条 HW 指令
+  end note
+  component "CompilerHLSL\n(spirv_hlsl.hpp/.cpp)\nHLSL 目标" as HLSL #DAE8FC
+  component "CompilerMSL\n(spirv_msl.hpp/.cpp)\nMetal Shading Language" as MSL #DAE8FC
+  component "CompilerCPP\n(spirv_cpp.hpp/.cpp)\nC++ 接口封装" as CPP #DAE8FC
+  component "CompilerReflection\n(spirv_reflect.hpp/.cpp)\nJSON 反射输出" as Reflect #DAE8FC
+}
+note bottom of HLSL
+  HW 修改 (MSL/HLSL/CPP/Reflect):
+  compile() 入口调用
+  reject_hw_neural_extensions() 拒绝
+end note
+Compiler <|-- GLSL
+GLSL <|-- HLSL
+GLSL <|-- MSL
+GLSL <|-- CPP
+GLSL <|-- Reflect
+
+' ---- C API 封装层 ----
+package "C API 封装层 (C89 兼容)" as CAPILayer {
+  component "spvc_context / spvc_parsed_ir\nspvc_compiler / spvc_compiler_options\nspvc_resources ...\n(spirv_cross_c.h / .cpp)" as CAPI
+  note right of CAPI
+    通过 spvc_backend 枚举选择后端:
+    GLSL / HLSL / MSL / CPP / JSON
+    将 C++ 接口包装为 C ABI
+  end note
+}
+
+' ---- CLI 入口 ----
+package "命令行入口" as CLI {
+  component "main.cpp\n(CLI 解析 + 多目标编译)" as Main
+}
+
+' ---- 外部接口 (CPU 端运行时) ----
+package "外部运行时接口 (include/spirv_cross/)" as ExtIface {
+  file "external_interface.h\n(GLSL/HLSL C 接口)" as ExtH
+  file "internal_interface.hpp" as IntH
+  file "image.hpp / sampler.hpp\nbarrier.hpp / thread_group.hpp" as HelperH
+}
+
+' ---- 测试与样例 ----
+package "测试 / 样例" as Tests {
+  folder "shaders*\n(输入 GLSL 源码)" as ShIn
+  file "glslang\n(可执行文件: GLSL→SPV)" as Glslang
+  file "test_shaders.py / .sh\n(驱动 + 对比输入/输出)" as TestPy
+  folder "samples" as Samples
+}
+
+' ===================== 流水线关系 =====================
+' 解析流水线
+SpvFile --> Parser
+SpirvHeaders ..> Parser : 引用枚举
+Instr --> Parser
+Parser --> ParsedIR : 产出 (fill ids / meta)
+
+' IR → Compiler
+ParsedIR --> Compiler : move / copy
+Common ..> ParsedIR : 组成
+Entities ..> Variant
+MetaStruct ..> MetaMap
+
+' 编译流水线
+Compiler --> GLSL : 继承
+GLSL --> [目标源码] : compile()
+
+' C API 路径
+CAPI --> Parser : spvc_context_parse_spirv
+CAPI --> GLSL : spvc_context_create_compiler
+CAPI --> HLSL
+CAPI --> MSL
+CAPI --> CPP
+CAPI --> Reflect
+
+' CLI 路径
+Main --> Parser
+Main --> GLSL
+Main --> HLSL
+Main --> MSL
+Main --> CPP
+Main --> Reflect
+Main --> Util
+
+' 测试: 输入 shader → glslang → SPV → SPIRV-Cross → GLSL → 对比输入输出
+ShIn --> Glslang : 输入 shader
+Glslang --> Main : SPV
+Main --> TestPy : 输出 GLSL
+TestPy ..> ShIn : 对比 (输入 vs 输出)
+
+' 外部接口
+ExtIface ..> GLSL : 由后端生成
+
+' 图例
+legend right
+  |= 符号 |= 含义 |
+  | -->   | 数据流 / 依赖 |
+  | ..>   | 引用 / 组合 |
+  | <|--  | 继承 |
+  | ▭     | 模块 / 包 |
+  | ▭(db)| 数据存储 |
+  | <back:#F8CECC>  </back> | HW 扩展主要实现 (GLSL 后端: 类型/指令发射) |
+  | <back:#DAE8FC>  </back> | HW 扩展涉及修改 (spirv.h/Parser/Compiler + 其余后端 reject) |
+endlegend
+
+@enduml

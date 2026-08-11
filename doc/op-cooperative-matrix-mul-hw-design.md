@@ -1,8 +1,8 @@
-# coopmatMulHW 设计文档
+# coopMatMulHW 设计文档
 
 ## 一、概述
 
-`coopmatMulHW` 是纯矩阵乘法函数，通过复用 `OpCooperativeMatrixMulAddHW`（opcode 6504）指令实现。当该指令的 C 操作数为 `OpUndef`（表示 None）时，SPIRV-Cross 将其映射为 `coopmatMulHW` 调用，而非 `coopmatMulAddHW`。
+`coopMatMulHW` 是纯矩阵乘法函数，通过复用 `OpCooperativeMatrixMulAddHW`（opcode 6504）指令实现。当该指令的 C 操作数为 `OpUndef`（表示 None）时，SPIRV-Cross 将其映射为 `coopMatMulHW` 调用，而非 `coopMatMulAddHW`。
 
 不新增 SPIR-V opcode，仅通过操作数语义区分。
 
@@ -26,7 +26,7 @@
 ## 三、GLSL 目标接口
 
 ```glsl
-void coopmatMulHW(
+void coopMatMulHW(
     out coopmatHW<T1, M, N> matO,    // 输出矩阵
     coopmatHW<T, M, K> matA,         // 左操作数矩阵
     coopmatHW<T, K, N> matB          // 右操作数矩阵
@@ -63,14 +63,14 @@ case OpCooperativeMatrixMulAddHW:
     if (length >= 5 && maybe_get<SPIRUndef>(ops[4]) == nullptr)
     {
         uint32_t c = ops[4];
-        statement("coopmatMulAddHW(", to_expression(id), ", ",
+        statement("coopMatMulAddHW(", to_expression(id), ", ",
                   to_expression(a), ", ",
                   to_expression(b), ", ",
                   to_expression(c), ");");
     }
     else
     {
-        statement("coopmatMulHW(", to_expression(id), ", ",
+        statement("coopMatMulHW(", to_expression(id), ", ",
                   to_expression(a), ", ",
                   to_expression(b), ");");
     }
@@ -97,13 +97,13 @@ OpCooperativeMatrixStoreHW %ptr %result ...
 **期望 GLSL 输出**:
 ```glsl
 coopmatHW<float, 16u, 16u> result;
-coopmatMulHW(result, matA, matB);
+coopMatMulHW(result, matA, matB);
 ```
 
 ### 5.2 MulAdd 测试（C=有效矩阵）保持不变
 
 ```glsl
-coopmatMulAddHW(result, matA, matB, matC);
+coopMatMulAddHW(result, matA, matB, matC);
 ```
 
 ---

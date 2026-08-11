@@ -12,6 +12,8 @@
 
 **OpBitcast 约束**：结果类型和值类型必须具有相同的分量数量以及每个分量的相同位数。
 
+**同宽整数 bitcast 特殊处理**：当分量类型为同位宽整数（如 uint32→int32）时，`bitcast_glsl_op` 返回标量类型构造函数名（如 `"int"`），直接应用到 HW 类型会导致 `int(coopmatHW<...>)` 等非法表达式。此时改用目标 HW 类型的构造函数（如 `coopmatHW<int, Mu, Nu>(arg)`），与 glslang 内建的 HW bitcast 重载匹配。浮点↔整数 bitcast（如 `floatBitsToInt`）仍使用 `bitcast_glsl_op` 返回的内建函数名。
+
 ---
 
 ## 二、SPIR-V 指令规范

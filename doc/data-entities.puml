@@ -1,0 +1,249 @@
+@startuml SPIRV-Cross-数据实体描述图
+!theme plain
+title SPIRV-Cross 数据实体描述图 (核心 IR 类图)
+
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 20
+skinparam ranksep 65
+left to right direction
+
+' ---- Typed ID 类型 (轻量强类型 ID) ----
+enum Types {
+  TypeNone .. TypeCount
+}
+note right of Types: 每个 IVariant 子类对应一个 Types 枚举\n用于 Variant 类型判别与对象池分配
+
+class TypedID<TypeNone> {
+  + id: uint32_t
+}
+class VariableID
+class TypeID
+class ConstantID
+class FunctionID
+class BlockID
+class ID
+TypedID <|-- VariableID
+TypedID <|-- TypeID
+TypedID <|-- ConstantID
+TypedID <|-- FunctionID
+TypedID <|-- BlockID
+TypedID <|-- ID
+
+' ---- IVariant 抽象基类 ----
+abstract class IVariant {
+  + self: ID
+  + clone(pool): IVariant*
+}
+
+' ---- ObjectPool / Variant (多态容器) ----
+class ObjectPoolGroup {
+  + pools[TypeCount]: ObjectPoolBase
+}
+class Variant {
+  + holder: IVariant*
+  + type: Types
+  + get<T>() / allocate_and_set<T>()
+}
+IVariant <|-- Variant : 持有
+ObjectPoolGroup "1" *-- "TypeCount" ObjectPoolBase : 池分配
+Variant --> ObjectPoolGroup : 使用池
+
+' ---- ParsedIR (IR 容器) ----
+class ParsedIR {
+  + spirv / ids / meta
+  + ids_for_type[TypeCount]
+  + entry_points / block_meta
+  + declared_capabilities / extensions
+  --
+  + set_name / set_decoration / for_each_typed_id<T>
+}
+ParsedIR "1" o-- "many" Variant : ids
+ParsedIR --> "many" Meta : meta
+ParsedIR --> ObjectPoolGroup : owns
+
+' ---- 所有 IVariant 具体实体 ----
+class SPIRType #DAE8FC {
+  + op / basetype / width / vecsize / columns
+  + array / array_size_literal / pointer
+  + storage / member_types / image
+  + type_alias / parent_type
+  + ext: union
+  --
+  + BaseType: Void/Bool/Int/Float/Struct/...
+  ..
+  + <color:#C62828>BaseType += CoopMatHW, CoopVecHW</color>
+  + <color:#C62828>ext.coopMatHW: component_type_id, rows_id, cols_id, use_id</color>
+  + <color:#C62828>ext.coopVecHW: component_type_id, component_count_id</color>
+}
+note bottom of SPIRType
+  HW 修改 (见上红字):
+  解析层对应 OpTypeCooperativeVectorHW /
+  OpTypeTensorMapHW; CoopMatHW 的 use 操作数
+  已改为可选 (length > 4)
+end note
+class SPIRVariable {
+  + 变量: 存储类 / 初始化器 / phi / 依赖
+}
+class SPIRFunction {
+  + 函数: 参数 / 局部变量 / 块列表
+}
+class SPIRBlock {
+  + 基本块: 终止符 / 合并 / phi / 指令
+}
+note bottom of SPIRBlock
+  HW 新增字段:
+  + reg_control: bool
+  (OpSelectionMerge 的 Relreg 掩码,
+   来自 SpvSelectionControlRelregMask)
+end note
+class SPIRConstant {
+  + 常量: 标量 / 向量 / 矩阵 / 特化
+}
+note bottom of SPIRConstant
+  HW 新增字段:
+  + replicated: bool
+  (OpConstantCompositeReplicateEXT /
+   OpSpecConstantCompositeReplicateEXT,
+   单分量复制构造; 构造函数增 replicated_ 参数)
+end note
+class SPIRExpression {
+  + 表达式: 依赖 / 不可变 / 访问链
+}
+class SPIRAccessChain {
+  + 访问链: 基址 / 索引 / 步长
+}
+class SPIRFunctionPrototype {
+  + 函数原型: 返回类型 / 参数类型
+}
+class SPIRUndef {
+  + 未定义值
+}
+class SPIRString {
+  + 字符串常量
+}
+class SPIRConstantOp {
+  + 常量运算: opcode / 参数
+}
+class SPIRCombinedImageSampler {
+  + 组合图像采样器
+}
+class SPIRExtension {
+  + 扩展: GLSL / Debug / NonSemantic
+}
+
+IVariant <|-- SPIRType
+IVariant <|-- SPIRVariable
+IVariant <|-- SPIRFunction
+IVariant <|-- SPIRBlock
+IVariant <|-- SPIRConstant
+IVariant <|-- SPIRExpression
+IVariant <|-- SPIRAccessChain
+IVariant <|-- SPIRFunctionPrototype
+IVariant <|-- SPIRUndef
+IVariant <|-- SPIRString
+IVariant <|-- SPIRConstantOp
+IVariant <|-- SPIRCombinedImageSampler
+IVariant <|-- SPIRExtension
+
+' 实体间引用
+SPIRVariable --> SPIRType : basetype
+SPIRFunction --> SPIRFunctionPrototype : function_type
+SPIRFunction --> SPIRBlock : entry_block / blocks
+SPIRBlock --> SPIRVariable : phi_variables
+SPIRBlock --> Instruction : ops
+SPIRConstant --> SPIRType : constant_type
+SPIRConstant --> SPIRConstant : subconstants
+SPIRExpression --> SPIRType : expression_type
+SPIRAccessChain --> SPIRType : basetype
+SPIRType --> SPIRType : member_types / type_alias
+SPIRType o-- ImageType : 内嵌
+
+' ---- Meta / Decoration (元数据) ----
+class Meta {
+  + 元数据: 装饰 / 成员 / 偏移
+}
+class Meta::Decoration {
+  + 装饰: 位置 / 绑定 / 内置 / 标志
+}
+Meta "1" *-- "1" Meta::Decoration : decoration
+Meta "1" *-- "many" Meta::Decoration : members
+
+' ---- 入口点 ----
+class SPIREntryPoint {
+  + 入口点: 名称 / 接口变量 / 工作组
+}
+SPIREntryPoint --> SPIRVariable : interface_variables
+
+' ---- 指令流 ----
+class Instruction {
+  + 指令: op / offset / length
+}
+class EmbeddedInstruction {
+  + 内嵌指令: ops[]
+}
+Instruction <|-- EmbeddedInstruction
+
+' ---- 反射查询结果 (Compiler 输出) ----
+class ShaderResources {
+  + 资源反射: UBO/SSBO/输入输出/采样器
+}
+class Resource {
+  + 资源: id / type_id / name
+}
+class BuiltInResource {
+  + 内置资源: builtin + Resource
+}
+ShaderResources "1" *-- "many" Resource
+ShaderResources "1" *-- "many" BuiltInResource
+BuiltInResource *-- Resource
+
+' ---- CFG (控制流分析, 非持久化数据) ----
+class CFG {
+  + 控制流图: 边 / 支配树 / 访问序
+}
+class DominatorBuilder {
+  + 支配关系构造器
+}
+CFG --> DominatorBuilder : 构造
+CFG ..> SPIRFunction : 分析
+CFG ..> SPIRBlock : 遍历
+
+' ---- Bitset (装饰位集) ----
+class Bitset {
+  + 位集: 装饰标志存储
+}
+Meta::Decoration --> Bitset : decoration_flags
+SPIREntryPoint --> Bitset : flags
+
+' ---- 辅助结构 ----
+class AccessChainMeta {
+  + 访问链元信息: 转置 / packed / builtin
+}
+class SpecializationConstant {
+  + 特化常量: id / constant_id
+}
+class CombinedImageSampler {
+  + 组合采样器: id 三元组
+}
+class BufferRange {
+  + 缓冲区范围: index / offset / range
+}
+class EntryPoint {
+  + 入口点: name / execution_model
+}
+
+' 图例
+legend right
+  |= 关系 |= 含义 |
+  | <|--        | 继承 (IVariant 多态) |
+  | *--         | 组合 (拥有/包含) |
+  | o--         | 聚合 (引用集合) |
+  | -->         | 关联/引用 |
+  | <back:#DAE8FC>  </back> | HW 扩展涉及修改的实体 |
+  | <color:#C62828>红字</color> | HW 扩展新增内容 |
+  | 其余实体仅作概要说明 |
+endlegend
+
+@enduml

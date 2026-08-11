@@ -91,7 +91,7 @@ ArrayElemTy可以是任意标量或向量类型，当前数据类型T可支持�
 
 2. `OpCooperativeMatrixStoreHW`
 
-| 7+vars | opcode: 6604 | \<id\> Object | \<id\> Pointer | \<id\> srcMatrixShape | \<id\> srcMatrixOffset | \<id\> layout | \<id\> Memory Operands/Operand (可选) |
+| 7+vars | opcode: 6604 | \<id\> Pointer | \<id\> Object | \<id\> srcMatrixShape | \<id\> srcMatrixOffset | \<id\> layout | \<id\> Memory Operands/Operand (可选) |
 | -- | -- | -- | -- | -- | -- | -- | -- |
 
 通过指针store一个coopmat
@@ -123,7 +123,7 @@ ArrayElemTy可以是任意标量或向量类型，当前数据类型T可支持�
 + C是M行、N列的协作矩阵，数据类型为T1
 
 ```
-void coopmatMulAddHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coopmatHW<T, K, N> matB, coopmatHW<T1, M, N> matC)
+void coopMatMulAddHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coopmatHW<T, K, N> matB, coopmatHW<T1, M, N> matC)
 ```
 
 详细设计文档：
@@ -134,11 +134,11 @@ void coopmatMulAddHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coop
 | -- | -- | -- | -- | -- | -- | -- |
 函数签名：
 ```
-void coopmatMulHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coopmatHW<T, K, N> matB)
+void coopMatMulHW(out coopmatHW<T1, M, N> matO, coopmatHW<T, M, K> matA, coopmatHW<T, K, N> matB)
 ```
 
 详细设计文档：
-- [coopmatMulHW 设计文档](op-cooperative-matrix-mul-hw-design.md)
+- [coopMatMulHW 设计文档](op-cooperative-matrix-mul-hw-design.md)
 
 #### 2.2.6 规约指令
 `OpCooperativeMatrixReduceHW`
@@ -379,14 +379,16 @@ uint32_t shuffle_fill_down(uint32_t src, uint32_t fill, int32_t shift);
 - [OpShuffleFillDownHW 设计文档](op-shuffle-fill-down-design.md)
 
 ## [[reg_control]]
-我们在SPV的OpSelectionMerge上加了一个枚举Relreg，对应的glsl签名是[[reg_control]]，以下是要还原的glsl代码：
+我们在SPV的OpSelectionMerge上加了一个枚举Relreg，对应的glsl签名是[[reg_control]]，要求 `GL_HW_neural_shader` 扩展，以下是要还原的glsl代码：
 ```
+#extension GL_HW_neural_shader : require
 [[reg_control]] if (idx == 0) {
     producer();
 } else {
     consumer();
 }
 ```
+当与 flatten/branch hint 共存时合并为 `[[flatten, reg_control]]` / `[[branch, reg_control]]`，同时要求 `GL_EXT_control_flow_attributes`。
 
 详细设计文档：
 - [[[reg_control]] 设计文档](op-reg-control-design.md)

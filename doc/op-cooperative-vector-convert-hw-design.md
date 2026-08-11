@@ -77,6 +77,8 @@ coopvecHW<float, M> floatVec = uintBitsToFloat(uintVec);
 
 当 `bitcast_glsl_op` 返回空字符串时，退化为使用构造函数语法。
 
+**同宽整数 bitcast 特殊处理**：当分量类型为同位宽整数（如 uint32→int32）时，`bitcast_glsl_op` 返回标量类型构造函数名（如 `"int"`），直接应用到 HW 类型会导致 `int(coopvecHW<...>)` 等非法表达式。此时改用目标 HW 类型的构造函数（如 `coopvecHW<int, Mu>(arg)`）。浮点↔整数 bitcast（如 `floatBitsToInt`）仍使用内建函数名。
+
 ---
 
 ## 四、实现设计
@@ -139,7 +141,15 @@ if (get<SPIRType>(result_type).basetype == SPIRType::CoopMatHW ||
         auto op = bitcast_glsl_op(out_component, in_component);
         if (!op.empty())
         {
-            emit_unary_func_op(result_type, id, arg, op.c_str());
+            bool integral_cast = type_is_integral(out_component) && type_is_integral(in_component);
+            bool same_size_cast = out_component.width == in_component.width;
+            if (integral_cast && same_size_cast)
+            {
+                auto func = type_to_glsl_constructor(get<SPIRType>(result_type));
+                emit_unary_func_op(result_type, id, arg, func.c_str());
+            }
+            else
+                emit_unary_func_op(result_type, id, arg, op.c_str());
             break;
         }
     }
@@ -153,7 +163,7 @@ if (get<SPIRType>(result_type).basetype == SPIRType::CoopMatHW ||
 - 根据类型（CoopMatHW 或 CoopVecHW）选择正确的 `component_type_id` 路径，因为两者的扩展结构不同：
   - CoopMatHW：`ext.coopMatHW.component_type_id`
   - CoopVecHW：`ext.coopVecHW.component_type_id`
-- 先尝试 `bitcast_glsl_op` 获取专门的 bitcast 函数（如 `floatBitsToInt`），如果不存在则回退到构造函数语法
+- 先尝试 `bitcast_glsl_op` 获取专门的 bitcast 函数（如 `floatBitsToInt`），若为同宽整数间 bitcast（返回标量构造函数名如 `"int"`）则改用目标 HW 类型构造函数；如果不存在则回退到构造函数语法
 
 ---
 

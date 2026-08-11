@@ -48,7 +48,7 @@
 ### 3.1 GLSL 函数签名
 
 ```glsl
-void coopmatMulAddHW(
+void coopMatMulAddHW(
     out coopmatHW<T1, M, N> matO,    // 输出矩阵 (out 参数)
     coopmatHW<T, M, K> matA,         // 左操作数矩阵
     coopmatHW<T, K, N> matB,         // 右操作数矩阵
@@ -86,7 +86,7 @@ void main() {
         coopMatLoadHW(matA, A, uvec2(M, K), uvec2(row, k), gl_CooperativeMatrixLayoutRowMajorHW);
         coopMatLoadHW(matB, B, uvec2(K, N), uvec2(k, col), gl_CooperativeMatrixLayoutRowMajorHW);
         coopmatHW<float, 16, 16> result;
-        coopmatMulAddHW(result, matA, matB, acc);
+        coopMatMulAddHW(result, matA, matB, acc);
         acc = result;
     }
 
@@ -125,7 +125,7 @@ case OpCooperativeMatrixMulAddHW:
 
     emit_uninitialized_temporary_expression(result_type, id);
 
-    statement("coopmatMulAddHW(", to_expression(id), ", ",
+    statement("coopMatMulAddHW(", to_expression(id), ", ",
               to_expression(a), ", ",
               to_expression(b), ", ",
               to_expression(c), ");");
@@ -164,7 +164,7 @@ coopMatLoadHW(_17, data._m0[0u], uvec2(16u), uvec2(0u), gl_CooperativeMatrixLayo
 coopmatHW<float, 16u, 16u> _18;
 coopMatLoadHW(_18, data._m0[0u], uvec2(16u), uvec2(0u), gl_CooperativeMatrixLayoutRowMajorHW);
 coopmatHW<float, 16u, 16u> _19;
-coopmatMulAddHW(_19, _16, _17, _18);
+coopMatMulAddHW(_19, _16, _17, _18);
 coopMatStoreHW(_19, data._m0[0u], uvec2(16u), uvec2(0u), gl_CooperativeMatrixLayoutRowMajorHW);
 ```
 
