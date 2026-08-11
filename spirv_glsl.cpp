@@ -13870,7 +13870,15 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				auto op = bitcast_glsl_op(out_component, in_component);
 				if (!op.empty())
 				{
-					emit_unary_func_op(result_type, id, arg, op.c_str());
+					bool integral_cast = type_is_integral(out_component) && type_is_integral(in_component);
+					bool same_size_cast = out_component.width == in_component.width;
+					if (integral_cast && same_size_cast)
+					{
+						auto func = type_to_glsl_constructor(get<SPIRType>(result_type));
+						emit_unary_func_op(result_type, id, arg, func.c_str());
+					}
+					else
+						emit_unary_func_op(result_type, id, arg, op.c_str());
 					break;
 				}
 			}
@@ -15686,16 +15694,16 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		if (has_c)
 		{
-			statement("coopmatMulAddHW(", to_expression(id), ", ",
-				          to_expression(a), ", ",
-				          to_expression(b), ", ",
-				          to_expression(ops[4]), ");");
+			statement("coopMatMulAddHW(", to_expression(id), ", ",
+			          to_expression(a), ", ",
+			          to_expression(b), ", ",
+			          to_expression(ops[4]), ");");
 		}
 		else
 		{
-			statement("coopmatMulHW(", to_expression(id), ", ",
-				          to_expression(a), ", ",
-				          to_expression(b), ");");
+			statement("coopMatMulHW(", to_expression(id), ", ",
+			          to_expression(a), ", ",
+			          to_expression(b), ");");
 		}
 
 		break;
@@ -15735,8 +15743,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (length < 5)
 			SPIRV_CROSS_THROW("Not enough operands for OpCooperativeMatrixStoreHW.");
 
-		uint32_t object = ops[0];
-		uint32_t ptr = ops[1];
+		uint32_t ptr = ops[0];
+		uint32_t object = ops[1];
 		uint32_t src_shape = ops[2];
 		uint32_t src_offset = ops[3];
 		uint32_t layout_id = ops[4];
@@ -16761,8 +16769,8 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 	{
 		require_extension_internal("GL_HW_neural_shader");
 		auto &component_type = get<SPIRType>(type.ext.coopMatHW.component_type_id);
-		uint32_t rows = get_constant(type.ext.coopMatHW.rows_id).scalar();
-		uint32_t cols = get_constant(type.ext.coopMatHW.cols_id).scalar();
+		uint32_t rows = evaluate_constant_u32(type.ext.coopMatHW.rows_id);
+		uint32_t cols = evaluate_constant_u32(type.ext.coopMatHW.cols_id);
 		return join("coopmatHW<", type_to_glsl(component_type), ", ", rows, "u, ", cols, "u>");
 	}
 
@@ -16770,7 +16778,7 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 	{
 		require_extension_internal("GL_HW_neural_shader");
 		auto &component_type = get<SPIRType>(type.ext.coopVecHW.component_type_id);
-		uint32_t count = get_constant(type.ext.coopVecHW.component_count_id).scalar();
+		uint32_t count = evaluate_constant_u32(type.ext.coopVecHW.component_count_id);
 		return join("coopvecHW<", type_to_glsl(component_type), ", ", count, "u>");
 	}
 
@@ -17541,10 +17549,25 @@ void CompilerGLSL::branch(BlockID from, uint32_t cond, BlockID true_block, Block
 
 	// We might have a loop merge here. Only consider selection flattening constructs.
 	// Loop hints are handled explicitly elsewhere.
-	if (from_block.hint == SPIRBlock::HintFlatten || from_block.hint == SPIRBlock::HintDontFlatten)
-		emit_block_hints(from_block);
-
 	auto prefix = from_block.reg_control ? "[[reg_control]] " : "";
+
+	if (from_block.reg_control)
+		require_extension_internal("GL_HW_neural_shader");
+
+	if (from_block.hint == SPIRBlock::HintFlatten || from_block.hint == SPIRBlock::HintDontFlatten)
+	{
+		if (from_block.reg_control)
+		{
+			// glslang requires combined [[flatten, reg_control]] rather than
+			// separate [[flatten]] [[reg_control]] attribute-specifiers.
+			require_extension_internal("GL_EXT_control_flow_attributes");
+			prefix = (from_block.hint == SPIRBlock::HintFlatten)
+			             ? "[[flatten, reg_control]] "
+			             : "[[branch, reg_control]] ";
+		}
+		else
+			emit_block_hints(from_block);
+	}
 
 	if (true_block_needs_code)
 	{

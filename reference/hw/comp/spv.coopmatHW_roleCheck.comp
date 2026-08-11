@@ -1,0 +1,105 @@
+#version 450
+#if defined(GL_AMD_gpu_shader_half_float)
+#extension GL_AMD_gpu_shader_half_float : require
+#elif defined(GL_NV_gpu_shader5)
+#extension GL_NV_gpu_shader5 : require
+#else
+#error No extension available for FP16.
+#endif
+#extension GL_HW_neural_shader : require
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0, std430) buffer Buf
+{
+    float16_t data[];
+} buf;
+
+void useAsAcc(coopmatHW<float16_t, 16u, 16u> P, coopmatHW<float16_t, 16u, 16u> A, coopmatHW<float16_t, 16u, 16u> B)
+{
+    coopmatHW<float16_t, 16u, 16u> _37;
+    coopMatMulAddHW(_37, A, coopmatHW<float16_t, 16u, 16u>(B), coopmatHW<float16_t, 16u, 16u>(P));
+    coopmatHW<float16_t, 16u, 16u> tempArg = _37;
+    coopmatHW<float16_t, 16u, 16u> D = tempArg;
+}
+
+void useAsOperand(coopmatHW<float16_t, 16u, 16u> P, coopmatHW<float16_t, 16u, 16u> B, coopmatHW<float16_t, 16u, 16u> C)
+{
+    coopmatHW<float16_t, 16u, 16u> _46;
+    coopMatMulAddHW(_46, P, coopmatHW<float16_t, 16u, 16u>(B), coopmatHW<float16_t, 16u, 16u>(C));
+    coopmatHW<float16_t, 16u, 16u> tempArg = _46;
+    coopmatHW<float16_t, 16u, 16u> D = tempArg;
+}
+
+coopmatHW<float16_t, 16u, 16u> makeAcc(coopmatHW<float16_t, 16u, 16u> A, coopmatHW<float16_t, 16u, 16u> B, coopmatHW<float16_t, 16u, 16u> C)
+{
+    coopmatHW<float16_t, 16u, 16u> _55;
+    coopMatMulAddHW(_55, A, coopmatHW<float16_t, 16u, 16u>(B), coopmatHW<float16_t, 16u, 16u>(C));
+    coopmatHW<float16_t, 16u, 16u> tempArg = _55;
+    coopmatHW<float16_t, 16u, 16u> D = tempArg;
+    return coopmatHW<float16_t, 16u, 16u>(D);
+}
+
+void main()
+{
+    bool cond = gl_LocalInvocationID.x == 0u;
+    coopmatHW<float16_t, 16u, 16u> _86;
+    coopMatLoadHW(_86, buf.data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 16u> tempArg = _86;
+    coopmatHW<float16_t, 16u, 16u> X = tempArg;
+    coopmatHW<float16_t, 16u, 16u> _91;
+    coopMatLoadHW(_91, buf.data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 16u> tempArg_1 = _91;
+    coopmatHW<float16_t, 16u, 16u> Y = tempArg_1;
+    coopmatHW<float16_t, 16u, 16u> _96;
+    coopMatLoadHW(_96, buf.data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 16u> tempArg_2 = _96;
+    coopmatHW<float16_t, 16u, 16u> A = tempArg_2;
+    coopmatHW<float16_t, 16u, 16u> _102;
+    coopMatLoadHW(_102, buf.data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 16u> tempArg_3 = _102;
+    coopmatHW<float16_t, 16u, 16u> B = tempArg_3;
+    coopmatHW<float16_t, 16u, 16u> _107;
+    coopMatLoadHW(_107, buf.data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 16u> tempArg_4 = _107;
+    coopmatHW<float16_t, 16u, 16u> C = tempArg_4;
+    if (cond)
+    {
+        coopmatHW<float16_t, 16u, 16u> _117;
+        coopMatMulAddHW(_117, X, B, C);
+        coopmatHW<float16_t, 16u, 16u> tempArg_5 = _117;
+        coopmatHW<float16_t, 16u, 16u> D0 = tempArg_5;
+    }
+    else
+    {
+        coopmatHW<float16_t, 16u, 16u> _126;
+        coopMatMulAddHW(_126, A, coopmatHW<float16_t, 16u, 16u>(X), C);
+        coopmatHW<float16_t, 16u, 16u> tempArg_6 = _126;
+        coopmatHW<float16_t, 16u, 16u> D1 = tempArg_6;
+    }
+    coopmatHW<float16_t, 16u, 16u> _131;
+    coopMatLoadHW(_131, buf.data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 16u> tempArg_7 = _131;
+    coopmatHW<float16_t, 16u, 16u> X_1 = tempArg_7;
+    coopmatHW<float16_t, 16u, 16u> _138;
+    coopMatMulAddHW(_138, A, B, X_1);
+    coopmatHW<float16_t, 16u, 16u> tempArg_8 = _138;
+    coopmatHW<float16_t, 16u, 16u> D2 = tempArg_8;
+    Y = X;
+    coopmatHW<float16_t, 16u, 16u> param = Y;
+    coopmatHW<float16_t, 16u, 16u> param_1 = A;
+    coopmatHW<float16_t, 16u, 16u> param_2 = coopmatHW<float16_t, 16u, 16u>(B);
+    useAsAcc(param, param_1, param_2);
+    coopmatHW<float16_t, 16u, 16u> param_3 = X;
+    coopmatHW<float16_t, 16u, 16u> param_4 = coopmatHW<float16_t, 16u, 16u>(B);
+    coopmatHW<float16_t, 16u, 16u> param_5 = coopmatHW<float16_t, 16u, 16u>(C);
+    useAsOperand(param_3, param_4, param_5);
+    coopmatHW<float16_t, 16u, 16u> param_6 = A;
+    coopmatHW<float16_t, 16u, 16u> param_7 = coopmatHW<float16_t, 16u, 16u>(B);
+    coopmatHW<float16_t, 16u, 16u> param_8 = coopmatHW<float16_t, 16u, 16u>(C);
+    coopmatHW<float16_t, 16u, 16u> R = makeAcc(param_6, param_7, param_8);
+    coopmatHW<float16_t, 16u, 16u> _173;
+    coopMatMulAddHW(_173, R, B, C);
+    coopmatHW<float16_t, 16u, 16u> tempArg_9 = _173;
+    coopmatHW<float16_t, 16u, 16u> D3 = tempArg_9;
+}
+

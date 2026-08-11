@@ -1,0 +1,24 @@
+#version 450
+#extension GL_HW_neural_shader : require
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0, std430) buffer Output
+{
+    int result0;
+    uint result1;
+    uint result2;
+} outputBuffer;
+
+void main()
+{
+    int value = int(gl_LocalInvocationID.x);
+    uint src0 = gl_LocalInvocationID.x;
+    uint src1 = 16909060u;
+    uint mask = 12816u;
+    uint fill = 4294967295u;
+    int shift = 4;
+    outputBuffer.result0 = shufidx(value, 31);
+    outputBuffer.result1 = bytePrmt(src0, src1, mask);
+    outputBuffer.result2 = shuffle_fill_down(src0, fill, shift);
+}
+

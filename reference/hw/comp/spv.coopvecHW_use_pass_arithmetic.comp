@@ -1,0 +1,40 @@
+#version 450
+#if defined(GL_AMD_gpu_shader_half_float)
+#extension GL_AMD_gpu_shader_half_float : require
+#elif defined(GL_NV_gpu_shader5)
+#extension GL_NV_gpu_shader5 : require
+#else
+#error No extension available for FP16.
+#endif
+#extension GL_HW_neural_shader : require
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    coopvecHW<float16_t, 16u> v1;
+    coopmatHW<float16_t, 16u, 16u> A1;
+    coopmatHW<float16_t, 16u, 16u> A2;
+    coopvecHW<float16_t, 16u> _21;
+    coopVecMatMulHW(_21, v1, A1 + A2);
+    coopvecHW<float16_t, 16u> tempArg = _21;
+    coopvecHW<float16_t, 16u> v0 = tempArg;
+    coopvecHW<float16_t, 16u> v3;
+    coopmatHW<float16_t, 16u, 16u> B1;
+    coopmatHW<float16_t, 16u, 16u> B2;
+    coopvecHW<float16_t, 16u> _32;
+    coopVecMatMulHW(_32, v3, B1 - B2);
+    coopvecHW<float16_t, 16u> tempArg_1 = _32;
+    coopvecHW<float16_t, 16u> v2 = tempArg_1;
+    coopvecHW<float16_t, 16u> v5;
+    coopmatHW<float16_t, 16u, 16u> C1;
+    coopvecHW<float16_t, 16u> _41;
+    coopVecMatMulHW(_41, v5, -C1);
+    coopvecHW<float16_t, 16u> tempArg_2 = _41;
+    coopvecHW<float16_t, 16u> v4 = tempArg_2;
+    coopvecHW<float16_t, 16u> v7;
+    coopvecHW<float16_t, 16u> _48;
+    coopVecMatMulHW(_48, v7, C1);
+    coopvecHW<float16_t, 16u> tempArg_3 = _48;
+    coopvecHW<float16_t, 16u> v6 = tempArg_3;
+}
+

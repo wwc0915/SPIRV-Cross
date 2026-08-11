@@ -935,10 +935,16 @@ def test_shaders_helper(stats, backend, args):
     all_files = []
     for root, dirs, files in os.walk(os.path.join(args.folder)):
         files = [ f for f in files if not f.startswith(".") ]   #ignore system files (esp OSX)
+        files = [ f for f in files if not f.endswith(".spv") ]  #ignore pre-compiled SPIR-V binaries
         for i in files:
             path = os.path.join(root, i)
             relpath = os.path.relpath(path, args.folder)
             all_files.append(relpath)
+
+    total = len(all_files)
+    passed = 0
+    failed = 0
+    failures = []
 
     # The child processes in parallel execution mode don't have the proper state for the global args variable, so
     # at this point we need to switch to explicit arguments
@@ -953,17 +959,39 @@ def test_shaders_helper(stats, backend, args):
             pool.join()
             results_completed = [res.get() for res in results]
 
-            for error in results_completed:
+            for idx, error in enumerate(results_completed):
                 if error is not None:
-                    print('Error:', error)
-                    sys.exit(1)
+                    failed += 1
+                    failures.append((all_files[idx], str(error)))
+                    if not args.continue_on_error:
+                        print('Error:', error)
+                        sys.exit(1)
+                else:
+                    passed += 1
 
     else:
         for i in all_files:
             e = test_shader_file(i, stats, args, backend)
             if e is not None:
-                print('Error:', e)
-                sys.exit(1)
+                failed += 1
+                failures.append((i, str(e)))
+                if not args.continue_on_error:
+                    print('Error:', e)
+                    sys.exit(1)
+            else:
+                passed += 1
+
+    print('')
+    print('========================================')
+    print('Statistics: total=%d  passed=%d  failed=%d' % (total, passed, failed))
+    if failures:
+        print('Failed shaders:')
+        for name, err in failures:
+            print('  FAIL: %s: %s' % (name, err))
+    print('========================================')
+
+    if failed > 0:
+        sys.exit(1)
 
 def test_shaders(backend, args):
     if args.malisc:
@@ -1010,6 +1038,10 @@ def main():
     parser.add_argument('--parallel',
             action = 'store_true',
             help = 'Execute tests in parallel.  Useful for doing regression quickly, but bad for debugging and stat output.')
+    parser.add_argument('--continue',
+            action = 'store_true',
+            dest = 'continue_on_error',
+            help = 'Continue testing after failures and print statistics summary.')
     parser.add_argument('--spirv-cross',
             default = './spirv-cross',
             help = 'Explicit path to spirv-cross')

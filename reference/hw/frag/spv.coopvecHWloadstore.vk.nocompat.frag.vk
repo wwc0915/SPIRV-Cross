@@ -1,0 +1,66 @@
+#version 450
+#if defined(GL_ARB_gpu_shader_int64)
+#extension GL_ARB_gpu_shader_int64 : require
+#else
+#error No extension available for 64-bit integers.
+#endif
+#if defined(GL_AMD_gpu_shader_half_float)
+#extension GL_AMD_gpu_shader_half_float : require
+#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#else
+#error No extension available for FP16.
+#endif
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_HW_neural_shader : require
+
+layout(buffer_reference) buffer MatrixBuf4;
+layout(buffer_reference, buffer_reference_align = 2, std430) buffer MatrixBuf4
+{
+    float16_t matrixData[];
+};
+
+layout(set = 0, binding = 0, std430) buffer MatrixBuf
+{
+    u64vec3 matrixData[];
+} matrixBuf;
+
+layout(set = 0, binding = 0, std430) buffer MatrixBuf2
+{
+    float16_t matrixData[];
+} matrixBuf2;
+
+layout(set = 0, binding = 0, std430) buffer MatrixBuf3
+{
+    float matrixData[];
+} matrixBuf3;
+
+layout(location = 0) out vec4 outColor;
+
+void main()
+{
+    outColor = vec4(1.0);
+    coopvecHW<float, 5u> _28;
+    coopVecLoadHW(_28, matrixBuf.matrixData, 0u);
+    coopvecHW<float, 5u> tempArg = _28;
+    coopvecHW<float, 5u> v = tempArg;
+    coopVecStoreHW(v, matrixBuf.matrixData, 0u);
+    coopvecHW<float, 5u> _42;
+    coopVecLoadHW(_42, matrixBuf2.matrixData, 1u);
+    coopvecHW<float, 5u> tempArg_1 = _42;
+    v = tempArg_1;
+    coopVecStoreHW(v, matrixBuf2.matrixData, 1u);
+    coopvecHW<float, 5u> _54;
+    coopVecLoadHW(_54, matrixBuf3.matrixData, 2u);
+    coopvecHW<float, 5u> tempArg_2 = _54;
+    v = tempArg_2;
+    coopVecStoreHW(v, matrixBuf3.matrixData, 2u);
+    MatrixBuf4 matrixBuf4;
+    coopvecHW<float, 5u> _68;
+    coopVecLoadHW(_68, matrixBuf4.matrixData, 3u);
+    coopvecHW<float, 5u> tempArg_3 = _68;
+    v = tempArg_3;
+    coopVecStoreHW(v, matrixBuf4.matrixData, 3u);
+}
+

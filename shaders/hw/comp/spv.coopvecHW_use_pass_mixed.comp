@@ -1,0 +1,40 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// Verify vec matmul matrix-role inference when the same matrix is also used by
+// cooperative matrix matmul and matmuladd operations.
+void main()
+{
+    coopvecHW<float16_t, 16> vin0, vin1, vin2, vin3;
+    coopvecHW<float16_t, 16> vout0, vout1, vout2, vout3;
+    coopvecHW<float16_t, 16> bias0, bias1;
+
+    coopmatHW<float16_t, 16, 16> lhs0, lhs1, lhs2, lhs3;
+    coopmatHW<float16_t, 16, 16> acc0, acc1, acc2;
+    coopmatHW<float16_t, 16, 16> rhsMul;
+    coopmatHW<float16_t, 16, 16> rhsAdd;
+    coopmatHW<float16_t, 16, 16> tie;
+    coopmatHW<float16_t, 16, 16> bDominant;
+    coopmatHW<float16_t, 16, 16> d0, d1, d2, d3, d4;
+
+    // rhsMul: vec matmul + matrix matmul right operand -> useB.
+    coopVecMatMulHW(vout0, vin0, rhsMul);
+    coopMatMulHW(d0, lhs0, rhsMul);
+
+    // rhsAdd: vec matmuladd + matrix matmuladd right operand -> useB.
+    coopVecMatMulAddHW(vout1, vin1, rhsAdd, bias0);
+    coopMatMulAddHW(d1, lhs1, rhsAdd, acc0);
+
+    // tie: vec matmul contributes useB, left matmuladd contributes useA -> tie resolves to useA.
+    coopVecMatMulHW(vout2, vin2, tie);
+    coopMatMulAddHW(d2, tie, lhs2, acc1);
+
+    // bDominant: vec matmuladd + right matmul outrank one left matmuladd use -> useB.
+    coopVecMatMulAddHW(vout3, vin3, bDominant, bias1);
+    coopMatMulAddHW(d3, bDominant, lhs3, acc2);
+    coopMatMulHW(d4, lhs3, bDominant);
+}

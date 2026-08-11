@@ -829,11 +829,12 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 		break;
 
 	case OpCooperativeMatrixStoreHW:
-		// OpCooperativeMatrixStoreHW is (Object, Pointer, srcShape, srcOffset, layout, [Memory Operands]).
-		// The backing interface variable is the Pointer at args[1]; Object is at args[0].
+		// OpCooperativeMatrixStoreHW is (Pointer, Object, srcShape, srcOffset, layout, [Memory Operands]),
+		// following the standard SPIR-V store convention (Pointer first, Object second).
+		// The backing interface variable is the Pointer at args[0]; Object is at args[1].
 		if (length < 2)
 			return false;
-		variable = args[1];
+		variable = args[0];
 		break;
 
 	case OpCopyMemory:
@@ -3481,10 +3482,9 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		if (length < 2)
 			return false;
 
-		// OpStore and OpCooperativeVectorStoreHW put the Pointer at args[0].
-		// OpCooperativeMatrixStoreHW is (Object, Pointer, srcShape, srcOffset, layout, [Memory Operands]),
-		// so its Pointer is at args[1].
-		ID ptr = (op == OpCooperativeMatrixStoreHW) ? args[1] : args[0];
+		// All three opcodes put the Pointer at args[0], following the standard
+		// SPIR-V store convention (Pointer first, Object second).
+		ID ptr = args[0];
 		auto *var = compiler.maybe_get_backing_variable(ptr);
 
 		// If we store through an access chain, we have a partial write.

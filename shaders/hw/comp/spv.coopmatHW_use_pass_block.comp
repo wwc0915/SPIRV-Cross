@@ -1,0 +1,42 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer Buf { float16_t data[]; } buf;
+
+void main()
+{
+    const ivec2 shape = ivec2(16, 16);
+    const ivec2 zeroOffset = ivec2(0, 0);
+
+    coopmatHW<float16_t, 16, 16> A, B, C;
+    coopmatHW<float16_t, 16, 16> D0, D1, D2;
+    coopmatHW<float16_t, 16, 16> Acc;
+
+    coopMatLoadHW(A, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(B, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(C, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(Acc, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+
+    {
+        coopmatHW<float16_t, 16, 16> X;
+        coopMatLoadHW(X, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+        coopMatMulAddHW(D0, X, B, C);
+
+        {
+            coopmatHW<float16_t, 16, 16> X;
+            coopMatLoadHW(X, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+            coopMatMulAddHW(D1, A, B, X);
+        }
+    }
+
+    coopMatMulAddHW(D1, A, B, Acc);
+
+    {
+        coopmatHW<float16_t, 16, 16> OpInBlock = Acc;
+        coopMatMulAddHW(D2, OpInBlock, B, C);
+    }
+}

@@ -1,0 +1,37 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer Buf { float16_t data[]; } buf;
+
+void main()
+{
+    const ivec2 shape = ivec2(16, 16);
+    const ivec2 zeroOffset = ivec2(0, 0);
+
+    float16_t x = 0.0hf;
+
+    coopmatHW<float16_t, 16, 16> A, B, C;
+    coopmatHW<float16_t, 16, 16> D0, D1, D2, D3;
+    coopmatHW<float16_t, 16, 16> rhsAccumConst;
+    coopmatHW<float16_t, 16, 16> rhsAccumScalar;
+
+    coopMatLoadHW(A, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(B, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(C, buf.data, shape, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+
+    rhsAccumConst = coopmatHW<float16_t, 16, 16>(0.0hf);
+    coopMatMulAddHW(D0, A, B, rhsAccumConst);
+
+    coopmatHW<float16_t, 16, 16> rhsBConst = coopmatHW<float16_t, 16, 16>(0.0hf);
+    coopMatMulAddHW(D1, A, rhsBConst, C);
+
+    coopmatHW<float16_t, 16, 16> rhsBScalar = coopmatHW<float16_t, 16, 16>(x);
+    coopMatMulAddHW(D2, A, rhsBScalar, C);
+
+    rhsAccumScalar = coopmatHW<float16_t, 16, 16>(x);
+    coopMatMulAddHW(D3, A, B, rhsAccumScalar);
+}
