@@ -574,21 +574,27 @@ def cross_compile_reflect(shader, spirv, opt, iterations, paths):
     subprocess.check_call([spirv_cross_path, '--entry', 'main', '--output', reflect_path, spirv_path, '--reflect', '--iterations', str(iterations)])
     return (spirv_path, reflect_path)
 
-def validate_shader(shader, vulkan, paths):
+def validate_shader(shader, vulkan, paths, target_env=None):
     if vulkan:
-        spirv_14 = '.spv14.' in shader
-        glslang_env = 'spirv1.4' if spirv_14 else 'vulkan1.1'
+        if target_env:
+            glslang_env = target_env
+        else:
+            spirv_14 = '.spv14.' in shader
+            glslang_env = 'spirv1.4' if spirv_14 else 'vulkan1.1'
         subprocess.check_call([paths.glslang, '--amb', '--target-env', glslang_env, '-V', shader])
     else:
         subprocess.check_call([paths.glslang, shader])
 
-def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, force_es, flatten_ubo, sso, flatten_dim, opt, push_ubo, iterations, paths):
+def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, force_es, flatten_ubo, sso, flatten_dim, opt, push_ubo, iterations, paths, target_env=None):
     spirv_path = create_temporary()
     glsl_path = create_temporary(os.path.basename(shader))
 
     spirv_16 = '.spv16.' in shader
     spirv_14 = '.spv14.' in shader
-    if spirv_16:
+    if target_env:
+        spirv_env = target_env
+        glslang_env = target_env
+    elif spirv_16:
         spirv_env = 'spv1.6'
         glslang_env = 'spirv1.6'
     elif spirv_14:
@@ -660,14 +666,14 @@ def cross_compile(shader, vulkan, spirv, invalid_spirv, eliminate, is_legacy, fo
     if (not ('nocompat' in glsl_path)) or (not vulkan):
         subprocess.check_call([spirv_cross_path, '--entry', 'main', '--output', glsl_path, spirv_path] + extra_args)
         if not 'nocompat' in glsl_path:
-            validate_shader(glsl_path, False, paths)
+            validate_shader(glsl_path, False, paths, target_env=target_env)
     else:
         remove_file(glsl_path)
         glsl_path = None
 
     if (vulkan or spirv) and (not is_legacy):
         subprocess.check_call([spirv_cross_path, '--entry', 'main', '-V', '--output', vulkan_glsl_path, spirv_path] + extra_args)
-        validate_shader(vulkan_glsl_path, True, paths)
+        validate_shader(vulkan_glsl_path, True, paths, target_env=target_env)
         # SPIR-V shaders might just want to validate Vulkan GLSL output, we don't always care about the output.
         if not vulkan:
             remove_file(vulkan_glsl_path)
@@ -852,7 +858,7 @@ def test_shader(stats, shader, args, paths):
     push_ubo = shader_is_push_ubo(shader[1])
 
     print('Testing shader:', joined_path)
-    spirv, glsl, vulkan_glsl = cross_compile(joined_path, vulkan, is_spirv, invalid_spirv, eliminate, is_legacy, force_es, flatten_ubo, sso, flatten_dim, args.opt and (not noopt), push_ubo, args.iterations, paths)
+    spirv, glsl, vulkan_glsl = cross_compile(joined_path, vulkan, is_spirv, invalid_spirv, eliminate, is_legacy, force_es, flatten_ubo, sso, flatten_dim, args.opt and (not noopt), push_ubo, args.iterations, paths, target_env=getattr(args, 'target_env', None))
 
     # Only test GLSL stats if we have a shader following GL semantics.
     if stats and (not vulkan) and (not is_spirv) and (not desktop):
@@ -1061,6 +1067,9 @@ def main():
             default = 1,
             type = int,
             help = 'Number of iterations to run SPIRV-Cross (benchmarking)')
+    parser.add_argument('--target-env',
+            default = None,
+            help = 'Override SPIR-V target environment for compilation and validation (e.g. vulkan1.3)')
 
     args = parser.parse_args()
     if not args.folder:

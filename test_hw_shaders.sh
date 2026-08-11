@@ -40,6 +40,7 @@ python3 "${SCRIPT_DIR}/test_shaders.py" hw \
 	--spirv-as "${SPIRV_AS}" \
 	--spirv-val "${SPIRV_VAL}" \
 	--spirv-opt "${SPIRV_OPT}" \
+	--target-env vulkan1.3 \
 	--continue \
 	"$@"
 TEST_RESULT=$?
