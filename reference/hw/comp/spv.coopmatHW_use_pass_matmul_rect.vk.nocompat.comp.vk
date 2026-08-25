@@ -1,0 +1,52 @@
+#version 460
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_HW_neural_shader : require
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std430) buffer InMatABlock
+{
+    uint8_t x[];
+} inMatA;
+
+layout(set = 0, binding = 1, std430) buffer InMatBBlock
+{
+    uint8_t x[];
+} inMatB;
+
+layout(set = 0, binding = 2, std430) buffer InMatCBlock
+{
+    uint x[];
+} inMatC;
+
+layout(set = 0, binding = 3, std430) buffer OutMatBlock
+{
+    uint x[];
+} outMat;
+
+void main()
+{
+    coopmatHW<uint8_t, 16u, 32u> _26;
+    coopMatLoadHW(_26, inMatA.x, ivec2(16, 32), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<uint8_t, 16u, 32u> tempArg = _26;
+    coopmatHW<uint8_t, 16u, 32u> matA = tempArg;
+    coopmatHW<uint8_t, 32u, 16u> _40;
+    coopMatLoadHW(_40, inMatB.x, ivec2(32, 16), ivec2(0), gl_CooperativeMatrixLayoutColumnMajorHW);
+    coopmatHW<uint8_t, 32u, 16u> tempArg_1 = _40;
+    coopmatHW<uint8_t, 32u, 16u> matB = tempArg_1;
+    coopmatHW<uint, 16u, 16u> _53;
+    coopMatLoadHW(_53, inMatC.x, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<uint, 16u, 16u> tempArg_2 = _53;
+    coopmatHW<uint, 16u, 16u> matC = tempArg_2;
+    coopmatHW<uint, 16u, 16u> _62;
+    coopMatMulAddHW(_62, matA, coopmatHW<uint8_t, 32u, 16u>(matB), matC);
+    coopmatHW<uint, 16u, 16u> tempArg_3 = _62;
+    coopmatHW<uint, 16u, 16u> matD = tempArg_3;
+    coopmatHW<uint8_t, 16u, 16u> matE = coopmatHW<uint8_t, 16u, 16u>(coopmatHW<uint8_t, 16u, 16u>(matD));
+    coopmatHW<uint, 32u, 16u> _78;
+    coopMatMulHW(_78, matB, matE);
+    coopmatHW<uint, 32u, 16u> tempArg_4 = _78;
+    coopmatHW<uint, 32u, 16u> matF = tempArg_4;
+    coopMatStoreHW(matF, outMat.x, ivec2(32, 16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+}
+

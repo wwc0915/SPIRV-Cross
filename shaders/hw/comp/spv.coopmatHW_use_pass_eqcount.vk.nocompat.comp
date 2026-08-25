@@ -1,0 +1,41 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer Buf { float16_t data[]; } buf;
+
+// Test 5: Equal left/right count → left >= right → useA
+// Matrix X(16x16) used as left 2x and right 2x
+// left_count(2) >= right_count(2) → MatrixUseAHW
+void main()
+{
+    const ivec2 shape16 = ivec2(16, 16);
+    const ivec2 zeroOffset = ivec2(0, 0);
+
+    coopmatHW<float16_t, 16, 16> X;
+    coopmatHW<float16_t, 16, 16> B, B2, C0, C1, C2, C3;
+    coopmatHW<float16_t, 16, 16> A0, A1;
+    coopmatHW<float16_t, 16, 16> D0, D1, D2, D3;
+
+    coopMatLoadHW(X,  buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(B,  buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(B2, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(A0, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(A1, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(C0, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(C1, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(C2, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(C3, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+
+    // X as left: left_count += 2
+    coopMatMulAddHW(D0, X,  B,  C0);
+    coopMatMulAddHW(D1, X,  B2, C1);
+    // X as right: right_count += 2
+    coopMatMulAddHW(D2, A0, X,  C2);
+    coopMatMulAddHW(D3, A1, X,  C3);
+
+    // left_count(2) >= right_count(2) → MatrixUseAHW
+}

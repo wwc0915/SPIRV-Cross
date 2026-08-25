@@ -1,0 +1,12 @@
+#version 450
+#extension GL_HW_neural_shader : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    cp_async_commit_group();
+    cp_async_wait_group(0);
+    barrier_arrive(0, 1);
+    barrier_wait(0, 1);
+}

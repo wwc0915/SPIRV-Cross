@@ -1,0 +1,44 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer Buf { float16_t data[]; } buf;
+
+// Test 8: Multiple mixed-use matrices sharing the same type (16x16)
+// M_left: only left → useA
+// M_right: only right → useB
+// M_acc: only acc → accumulator
+// M_ab: left 2x, right 1x → left >= right → useA
+// M_ba: left 1x, right 2x → right > left → useB
+void main()
+{
+    const ivec2 shape16 = ivec2(16, 16);
+    const ivec2 zeroOffset = ivec2(0, 0);
+
+    coopmatHW<float16_t, 16, 16> M_left, M_right, M_acc, M_ab, M_ba;
+    coopmatHW<float16_t, 16, 16> D0, D1, D2, D3, D4, D5, D6;
+
+    coopMatLoadHW(M_left,  buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(M_right, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(M_acc,   buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(M_ab,    buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(M_ba,    buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+
+    // M_left as left, M_right as right, M_acc as accumulator
+    coopMatMulAddHW(D0, M_left, M_right, M_acc);
+
+    // M_ab: left 2x
+    coopMatMulAddHW(D1, M_ab, M_right, M_acc);
+    coopMatMulAddHW(D2, M_ab, M_right, M_acc);
+    // M_ab: right 1x → total left=2, right=1 → useA
+    coopMatMulAddHW(D3, M_left, M_ab, M_acc);
+
+    // M_ba: right 2x
+    coopMatMulAddHW(D4, M_left, M_ba, M_acc);
+    coopMatMulAddHW(D5, M_left, M_ba, M_acc);
+    // M_ba: left 1x → total left=1, right=2 → useB
+    coopMatMulAddHW(D6, M_ba, M_right, M_acc);
+}

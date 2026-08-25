@@ -922,20 +922,29 @@ def test_shader_reflect(stats, shader, args, paths):
     regression_check_reflect(shader, reflect, args)
     remove_file(spirv)
 
+def shader_expects_error(shader):
+	return '.expect_error.' in shader
+
 def test_shader_file(relpath, stats, args, backend):
-    paths = Paths(args.spirv_cross, args.glslang, args.spirv_as, args.spirv_val, args.spirv_opt)
-    try:
-        if backend == 'msl':
-            test_shader_msl(stats, (args.folder, relpath), args, paths)
-        elif backend == 'hlsl':
-            test_shader_hlsl(stats, (args.folder, relpath), args, paths)
-        elif backend == 'reflect':
-            test_shader_reflect(stats, (args.folder, relpath), args, paths)
-        else:
-            test_shader(stats, (args.folder, relpath), args, paths)
-        return None
-    except Exception as e:
-        return e
+	paths = Paths(args.spirv_cross, args.glslang, args.spirv_as, args.spirv_val, args.spirv_opt)
+	expects_error = shader_expects_error(relpath)
+	try:
+		if backend == 'msl':
+			test_shader_msl(stats, (args.folder, relpath), args, paths)
+		elif backend == 'hlsl':
+			test_shader_hlsl(stats, (args.folder, relpath), args, paths)
+		elif backend == 'reflect':
+			test_shader_reflect(stats, (args.folder, relpath), args, paths)
+		else:
+			test_shader(stats, (args.folder, relpath), args, paths)
+		if expects_error:
+			return RuntimeError('Expected spirv-cross to fail but it succeeded.')
+		return None
+	except Exception as e:
+		if expects_error:
+			print('Expected error (pass):', e)
+			return None
+		return e
 
 def test_shaders_helper(stats, backend, args):
     all_files = []

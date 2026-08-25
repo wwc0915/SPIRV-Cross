@@ -1,0 +1,19 @@
+#version 450
+#extension GL_HW_neural_shader : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+shared int dstMem[16];
+
+layout(set = 0, binding = 0) uniform tensorMap1D tm1;
+layout(set = 0, binding = 1) uniform tensorMap2D tm2;
+layout(set = 0, binding = 2) uniform tensorMap3D tm3;
+layout(set = 0, binding = 3) uniform tensorMap4D tm4;
+
+void main()
+{
+    cp_async_tensor_global_shared(dstMem, tm1, 0);
+    cp_async_tensor_global_shared(dstMem, tm2, ivec2(0, 1));
+    cp_async_tensor_global_shared(dstMem, tm3, ivec3(0, 1, 2));
+    cp_async_tensor_global_shared(dstMem, tm4, ivec4(0, 1, 2, 3));
+}

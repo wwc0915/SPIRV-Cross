@@ -1,0 +1,21 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// Chained vec matmul: output of first coopVecMatMulHW used as input to second.
+// Both matrices independently resolve to MatrixUseBHW.
+// The intermediate vector carries no use designation and must not interfere.
+void main()
+{
+    coopvecHW<float16_t, 16> v0, inter, v2;
+    coopmatHW<float16_t, 16, 16> wmat1;
+    coopmatHW<float16_t, 16, 16> wmat2;
+
+    // wmat1: matrix in coopVecMatMulHW -> UseB
+    // wmat2: matrix in coopVecMatMulHW -> UseB
+    coopVecMatMulHW(inter, v0, wmat1);
+    coopVecMatMulHW(v2, inter, wmat2);
+}

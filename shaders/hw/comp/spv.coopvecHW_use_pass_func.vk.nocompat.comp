@@ -1,0 +1,45 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer Buf { float16_t data[]; } buf;
+
+// Matrix passed as function parameter and used in coopVecMatMulHW.
+// Function params are uniformly rewritten to UseA; bitcasts are inserted
+// inside the callee (UseA->UseB for vec matmul) and at call sites
+// (caller's UseB->UseA for param store).
+void doVecMul(coopmatHW<float16_t, 16, 16> mat,
+              coopvecHW<float16_t, 16> vin)
+{
+    coopvecHW<float16_t, 16> result;
+    coopVecMatMulHW(result, vin, mat);
+}
+
+// Matrix used in both coopVecMatMulHW and coopVecMatMulAddHW inside callee.
+void doVecMulAdd(coopmatHW<float16_t, 16, 16> mat,
+                 coopvecHW<float16_t, 16> vin,
+                 coopvecHW<float16_t, 16> bias)
+{
+    coopvecHW<float16_t, 16> r1, r2;
+    coopVecMatMulHW(r1, vin, mat);
+    coopVecMatMulAddHW(r2, vin, mat, bias);
+}
+
+void main()
+{
+    const ivec2 shape = ivec2(16, 16);
+    const ivec2 offset = ivec2(0, 0);
+
+    coopmatHW<float16_t, 16, 16> M;
+    coopvecHW<float16_t, 16> v0, bias;
+
+    coopMatLoadHW(M, buf.data, shape, offset, gl_CooperativeMatrixLayoutRowMajorHW);
+
+    // M constrained to UseB from both callees' vec matmul/matmuladd.
+    // Caller bitcasts UseB->UseA for param store.
+    doVecMul(M, v0);
+    doVecMulAdd(M, v0, bias);
+}
