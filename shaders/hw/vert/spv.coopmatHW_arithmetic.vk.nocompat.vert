@@ -1,0 +1,100 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+void main()
+{
+    gl_Position = vec4(0.0);
+
+    coopmatHW<float16_t, 16, 8> f16a, f16b;
+    coopmatHW<float, 8, 16> f32a, f32b;
+
+    coopmatHW<int, 8, 8> i32a, i32b;
+    coopmatHW<int8_t, 16, 8> i8a, i8b;
+    coopmatHW<int16_t, 16, 16> i16a, i16b;
+
+    coopmatHW<uint, 8, 16> u32a, u32b;
+    coopmatHW<uint8_t, 16, 8> u8a, u8b;
+    coopmatHW<uint16_t, 4, 16> u16a, u16b;
+
+    f16a = -f16a;
+    f16a = f16a + f16b;
+    f16a = f16a - f16b;
+    f16a = f16a * f16b;
+    f16a = f16a / f16b;
+    f16a += f16b;
+    f16a -= f16b;
+    f16a *= f16b;
+    f16a /= f16b;
+
+    f32a = -f32a;
+    f32a = f32a + f32b;
+    f32a = f32a - f32b;
+    f32a = f32a * f32b;
+    f32a = f32a / f32b;
+    f32a += f32b;
+    f32a -= f32b;
+    f32a *= f32b;
+    f32a /= f32b;
+
+    i32a = -i32a;
+    i32a = i32a + i32b;
+    i32a = i32a - i32b;
+    i32a = i32a * i32b;
+    i32a = i32a / i32b;
+    i32a += i32b;
+    i32a -= i32b;
+    i32a *= i32b;
+    i32a /= i32b;
+
+    i8a = -i8a;
+    i8a = i8a + i8b;
+    i8a = i8a - i8b;
+    i8a = i8a * i8b;
+    i8a = i8a / i8b;
+    i8a += i8b;
+    i8a -= i8b;
+    i8a *= i8b;
+    i8a /= i8b;
+
+    i16a = -i16a;
+    i16a = i16a + i16b;
+    i16a = i16a - i16b;
+    i16a = i16a * i16b;
+    i16a = i16a / i16b;
+    i16a += i16b;
+    i16a -= i16b;
+    i16a *= i16b;
+    i16a /= i16b;
+
+    u32a = -u32a;
+    u32a = u32a + u32b;
+    u32a = u32a - u32b;
+    u32a = u32a * u32b;
+    u32a = u32a / u32b;
+    u32a += u32b;
+    u32a -= u32b;
+    u32a *= u32b;
+    u32a /= u32b;
+
+    u8a = -u8a;
+    u8a = u8a + u8b;
+    u8a = u8a - u8b;
+    u8a = u8a * u8b;
+    u8a = u8a / u8b;
+    u8a += u8b;
+    u8a -= u8b;
+    u8a *= u8b;
+    u8a /= u8b;
+
+    u16a = -u16a;
+    u16a = u16a + u16b;
+    u16a = u16a - u16b;
+    u16a = u16a * u16b;
+    u16a = u16a / u16b;
+    u16a += u16b;
+    u16a -= u16b;
+    u16a *= u16b;
+    u16a /= u16b;
+}

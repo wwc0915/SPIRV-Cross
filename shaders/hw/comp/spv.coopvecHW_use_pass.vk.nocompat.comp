@@ -1,0 +1,29 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// Verify that cooperative vector HW matmul matrix operands contribute useB.
+void main()
+{
+    coopvecHW<float16_t, 16> in0, in1, in2, in3, in4, in5;
+    coopvecHW<float16_t, 16> out0, out1, out2, out3, out4, out5;
+    coopvecHW<float16_t, 16> bias0, bias1, bias2;
+    coopmatHW<float16_t, 16, 16> mulOnly;
+    coopmatHW<float16_t, 16, 16> addOnly;
+    coopmatHW<float16_t, 16, 16> sharedMat;
+
+    // mulOnly: used only by vec matmul -> useB.
+    coopVecMatMulHW(out0, in0, mulOnly);
+    coopVecMatMulHW(out1, in1, mulOnly);
+
+    // addOnly: used only by vec matmuladd -> useB.
+    coopVecMatMulAddHW(out2, in2, addOnly, bias0);
+    coopVecMatMulAddHW(out3, in3, addOnly, bias1);
+
+    // sharedMat: used by both vec ops -> still useB.
+    coopVecMatMulHW(out4, in4, sharedMat);
+    coopVecMatMulAddHW(out5, in5, sharedMat, bias2);
+}

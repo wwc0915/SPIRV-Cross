@@ -1,0 +1,53 @@
+#version 450
+#if defined(GL_AMD_gpu_shader_half_float)
+#extension GL_AMD_gpu_shader_half_float : require
+#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#else
+#error No extension available for FP16.
+#endif
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_HW_neural_shader : require
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std430) buffer BufA
+{
+    float16_t a_data[];
+} bufA;
+
+layout(set = 0, binding = 1, std430) buffer BufB
+{
+    float16_t b_data[];
+} bufB;
+
+layout(set = 0, binding = 2, std430) buffer BufC
+{
+    float16_t c_data[];
+} bufC;
+
+layout(set = 0, binding = 3, std430) buffer BufD
+{
+    float16_t d_data[];
+} bufD;
+
+void main()
+{
+    coopmatHW<float16_t, 16u, 8u> _26;
+    coopMatLoadHW(_26, bufA.a_data, ivec2(16, 8), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 8u> tempArg = _26;
+    coopmatHW<float16_t, 16u, 8u> A = tempArg;
+    coopmatHW<float16_t, 8u, 16u> _39;
+    coopMatLoadHW(_39, bufB.b_data, ivec2(8, 16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 8u, 16u> tempArg_1 = _39;
+    coopmatHW<float16_t, 8u, 16u> B = tempArg_1;
+    coopmatHW<float16_t, 16u, 16u> _52;
+    coopMatLoadHW(_52, bufC.c_data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 16u> tempArg_2 = _52;
+    coopmatHW<float16_t, 16u, 16u> C = tempArg_2;
+    coopmatHW<float16_t, 16u, 16u> _59;
+    coopMatMulAddHW(_59, A, B, C);
+    coopmatHW<float16_t, 16u, 16u> tempArg_3 = _59;
+    coopmatHW<float16_t, 16u, 16u> D = tempArg_3;
+    coopMatStoreHW(D, bufD.d_data, ivec2(16), ivec2(0), gl_CooperativeMatrixLayoutColumnMajorHW);
+}
+

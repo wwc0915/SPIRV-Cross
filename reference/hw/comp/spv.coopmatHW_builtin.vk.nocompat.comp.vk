@@ -1,0 +1,123 @@
+#version 450
+#if defined(GL_AMD_gpu_shader_half_float)
+#extension GL_AMD_gpu_shader_half_float : require
+#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#else
+#error No extension available for FP16.
+#endif
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+#extension GL_HW_neural_shader : require
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(constant_id = 0) const int Rows = 16;
+const int _10 = (2 * Rows);
+layout(constant_id = 1) const int Columns = 16;
+
+layout(set = 0, binding = 0, std430) buffer BufF16
+{
+    float16_t data[];
+} bufF16;
+
+layout(set = 0, binding = 1, std430) buffer BufI8
+{
+    int8_t data[];
+} bufI8;
+
+layout(set = 0, binding = 2, std430) buffer BufU16
+{
+    uint16_t data[];
+} bufU16;
+
+void main()
+{
+    coopmatHW<float16_t, 32u, 16u> _38;
+    coopMatLoadHW(_38, bufF16.data, ivec2(32, 512), ivec2(0, int(16u * gl_WorkGroupID.x)), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 32u, 16u> tempArg = _38;
+    coopmatHW<float16_t, 32u, 16u> matA = tempArg;
+    coopmatHW<float16_t, 16u, 8u> _51;
+    coopMatLoadHW(_51, bufF16.data, ivec2(16, 8), ivec2(1, 2), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 8u> tempArg_1 = _51;
+    coopmatHW<float16_t, 16u, 8u> fA = tempArg_1;
+    coopmatHW<float16_t, 8u, 8u> _62;
+    coopMatLoadHW(_62, bufF16.data, ivec2(8), ivec2(3, 4), gl_CooperativeMatrixLayoutColumnMajorHW);
+    coopmatHW<float16_t, 8u, 8u> tempArg_2 = _62;
+    coopmatHW<float16_t, 8u, 8u> fB = tempArg_2;
+    coopmatHW<float16_t, 16u, 8u> _72;
+    coopMatLoadHW(_72, bufF16.data, ivec2(16, 8), ivec2(5, 6), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<float16_t, 16u, 8u> tempArg_3 = _72;
+    coopmatHW<float16_t, 16u, 8u> fC = tempArg_3;
+    coopmatHW<float, 8u, 8u> _84;
+    coopMatMulHW(_84, coopmatHW<float16_t, 8u, 8u>(fB), fB);
+    coopmatHW<float, 8u, 8u> tempArg_4 = _84;
+    coopmatHW<float, 8u, 8u> fMulR = tempArg_4;
+    coopmatHW<float16_t, 16u, 8u> _91;
+    coopMatMulAddHW(_91, fA, fB, fC);
+    coopmatHW<float16_t, 16u, 8u> tempArg_5 = _91;
+    fC = tempArg_5;
+    coopmatHW<float16_t, 16u, 8u> _95 = coopMatReduceHW(fC, gl_CooperativeMatrixReduceRowHW, gl_CooperativeMatrixReduceAddHW);
+    coopmatHW<float16_t, 16u, 8u> fR = coopmatHW<float16_t, 16u, 8u>(_95);
+    coopMatStoreHW(fR, bufF16.data, ivec2(16, 8), ivec2(7, 8), gl_CooperativeMatrixLayoutColumnMajorHW);
+    int lf = int(uint(coopmatHW<float16_t, 16u, 8u>(0).length())) + int(uint(coopmatHW<float, 8u, 8u>(0).length()));
+    coopmatHW<int8_t, 16u, 8u> _121;
+    coopMatLoadHW(_121, bufI8.data, ivec2(16, 8), ivec2(9, 10), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<int8_t, 16u, 8u> tempArg_6 = _121;
+    coopmatHW<int8_t, 16u, 8u> iA = tempArg_6;
+    coopmatHW<int8_t, 8u, 16u> _132;
+    coopMatLoadHW(_132, bufI8.data, ivec2(8, 16), ivec2(11, 12), gl_CooperativeMatrixLayoutColumnMajorHW);
+    coopmatHW<int8_t, 8u, 16u> tempArg_7 = _132;
+    coopmatHW<int8_t, 8u, 16u> iB = tempArg_7;
+    coopmatHW<int8_t, 16u, 16u> _143;
+    coopMatLoadHW(_143, bufI8.data, ivec2(16), ivec2(13, 14), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<int8_t, 16u, 16u> tempArg_8 = _143;
+    coopmatHW<int8_t, 16u, 16u> iC = tempArg_8;
+    coopmatHW<int8_t, 16u, 16u> iOperand = coopmatHW<int8_t, 16u, 16u>(iC);
+    coopmatHW<int, 16u, 16u> _159;
+    coopMatMulHW(_159, iOperand, coopmatHW<int8_t, 16u, 16u>(iOperand));
+    coopmatHW<int, 16u, 16u> tempArg_9 = _159;
+    coopmatHW<int, 16u, 16u> iMulR = tempArg_9;
+    coopmatHW<int8_t, 16u, 16u> _166;
+    coopMatMulAddHW(_166, iA, iB, iC);
+    coopmatHW<int8_t, 16u, 16u> tempArg_10 = _166;
+    iC = tempArg_10;
+    coopmatHW<int8_t, 16u, 16u> _170 = coopMatReduceHW(iC, gl_CooperativeMatrixReduceColumnHW, gl_CooperativeMatrixReduceMinHW);
+    coopmatHW<int8_t, 16u, 16u> iR = coopmatHW<int8_t, 16u, 16u>(_170);
+    coopMatStoreHW(iR, bufI8.data, ivec2(16), ivec2(15, 16), gl_CooperativeMatrixLayoutColumnMajorHW);
+    int li = int(uint(coopmatHW<int8_t, 16u, 16u>(0).length())) + int(uint(coopmatHW<int, 16u, 16u>(0).length()));
+    coopmatHW<uint16_t, 4u, 16u> _197;
+    coopMatLoadHW(_197, bufU16.data, ivec2(4, 16), ivec2(17, 18), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<uint16_t, 4u, 16u> tempArg_11 = _197;
+    coopmatHW<uint16_t, 4u, 16u> uA = tempArg_11;
+    coopmatHW<uint16_t, 16u, 4u> _208;
+    coopMatLoadHW(_208, bufU16.data, ivec2(16, 4), ivec2(19, 20), gl_CooperativeMatrixLayoutColumnMajorHW);
+    coopmatHW<uint16_t, 16u, 4u> tempArg_12 = _208;
+    coopmatHW<uint16_t, 16u, 4u> uB = tempArg_12;
+    coopmatHW<uint16_t, 4u, 4u> _219;
+    coopMatLoadHW(_219, bufU16.data, ivec2(4), ivec2(21, 22), gl_CooperativeMatrixLayoutRowMajorHW);
+    coopmatHW<uint16_t, 4u, 4u> tempArg_13 = _219;
+    coopmatHW<uint16_t, 4u, 4u> uC = tempArg_13;
+    coopmatHW<uint16_t, 4u, 4u> uOperand = coopmatHW<uint16_t, 4u, 4u>(uC);
+    coopmatHW<uint, 4u, 4u> _235;
+    coopMatMulHW(_235, uOperand, coopmatHW<uint16_t, 4u, 4u>(uOperand));
+    coopmatHW<uint, 4u, 4u> tempArg_14 = _235;
+    coopmatHW<uint, 4u, 4u> uMulR = tempArg_14;
+    coopmatHW<uint16_t, 4u, 4u> _242;
+    coopMatMulAddHW(_242, uA, uB, uC);
+    coopmatHW<uint16_t, 4u, 4u> tempArg_15 = _242;
+    uC = tempArg_15;
+    coopmatHW<uint16_t, 4u, 4u> _246 = coopMatReduceHW(uC, gl_CooperativeMatrixReduceRowHW, gl_CooperativeMatrixReduceMaxHW);
+    coopmatHW<uint16_t, 4u, 4u> uR = coopmatHW<uint16_t, 4u, 4u>(_246);
+    coopMatStoreHW(uR, bufU16.data, ivec2(4), ivec2(23, 24), gl_CooperativeMatrixLayoutColumnMajorHW);
+    int lu = int(uint(coopmatHW<uint16_t, 4u, 4u>(0).length())) + int(uint(coopmatHW<uint, 4u, 4u>(0).length()));
+    if (((lf + li) + lu) == 0)
+    {
+        coopMatStoreHW(matA, bufF16.data, ivec2(32, 512), ivec2(0, int(16u * gl_WorkGroupID.x)), gl_CooperativeMatrixLayoutRowMajorHW);
+        fC = coopmatHW<float16_t, 16u, 8u>(fR);
+        iC = coopmatHW<int8_t, 16u, 16u>(iR);
+        uC = coopmatHW<uint16_t, 4u, 4u>(uR);
+    }
+}
+

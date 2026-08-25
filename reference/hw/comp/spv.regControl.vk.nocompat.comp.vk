@@ -1,0 +1,42 @@
+#version 450
+#extension GL_HW_neural_shader : require
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    bool cond = gl_LocalInvocationID.x == 0u;
+    int value = 0;
+    [[reg_control]] if (cond)
+    {
+        value = 1;
+    }
+    else
+    {
+        value = 2;
+    }
+    [[flatten, reg_control]] if (cond)
+    {
+        value += 3;
+    }
+    [[branch, reg_control]] if (cond)
+    {
+        value += 4;
+    }
+    if (value == 42)
+    {
+        value = 0;
+    }
+}
+

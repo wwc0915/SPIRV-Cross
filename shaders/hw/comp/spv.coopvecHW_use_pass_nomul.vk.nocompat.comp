@@ -1,0 +1,22 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer InBuf { float16_t data[]; } inBuf;
+layout(set = 0, binding = 1) buffer OutBuf { float16_t data[]; } outBuf;
+
+// No matmul use at all. Matrix only loaded and stored.
+// The use pass should default to MatrixUseAHW.
+void main()
+{
+    const ivec2 shape = ivec2(16, 16);
+    const ivec2 offset = ivec2(0, 0);
+
+    coopmatHW<float16_t, 16, 16> passthrough;
+
+    coopMatLoadHW(passthrough, inBuf.data, shape, offset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatStoreHW(passthrough, outBuf.data, shape, offset, gl_CooperativeMatrixLayoutColumnMajorHW);
+}

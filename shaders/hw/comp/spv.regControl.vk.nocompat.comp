@@ -1,0 +1,33 @@
+#version 450
+
+#extension GL_EXT_control_flow_attributes : enable
+#extension GL_HW_neural_shader : enable
+
+layout(local_size_x = 1) in;
+
+void main()
+{
+    bool cond = gl_LocalInvocationID.x == 0u;
+    int value = 0;
+
+    [[reg_control]]
+    if (cond) {
+        value = 1;
+    } else {
+        value = 2;
+    }
+
+    [[flatten, reg_control]]
+    if (cond) {
+        value += 3;
+    }
+
+    [[branch, reg_control]]
+    if (cond) {
+        value += 4;
+    }
+
+    if (value == 42) {
+        value = 0;
+    }
+}

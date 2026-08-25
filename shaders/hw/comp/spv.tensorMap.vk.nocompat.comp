@@ -1,0 +1,13 @@
+#version 450
+#extension GL_HW_neural_shader : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform tensorMap1D tm1;
+layout(set = 0, binding = 1) uniform tensorMap2D tm2;
+layout(set = 0, binding = 2) uniform tensorMap3D tm3;
+layout(set = 0, binding = 3) uniform tensorMap4D tm4;
+
+void main()
+{
+}

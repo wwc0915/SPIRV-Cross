@@ -1,0 +1,33 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// Arithmetic propagation: matrix used in element-wise arithmetic, result passed
+// directly to vec matmul. UseB propagates backward through the expression
+// tree via multi-pass fixed-point iteration.
+void main()
+{
+    coopvecHW<float16_t, 16> v0, v1, v2, v3, v4, v5, v6, v7;
+    coopmatHW<float16_t, 16, 16> A1, A2;
+    coopmatHW<float16_t, 16, 16> B1, B2;
+    coopmatHW<float16_t, 16, 16> C1;
+
+    // Element-wise add: vec matmul constrains (A1+A2) to UseB,
+    // propagateSameUse flows UseB back to both A1 and A2.
+    coopVecMatMulHW(v0, v1, A1 + A2);
+
+    // Element-wise subtract: vec matmul constrains (B1-B2) to UseB,
+    // propagateSameUse flows UseB back to both B1 and B2.
+    coopVecMatMulHW(v2, v3, B1 - B2);
+
+    // Unary negate: vec matmul constrains (-C1) to UseB,
+    // propagateSameUse flows UseB back to C1.
+    coopVecMatMulHW(v4, v5, -C1);
+
+    // Type-conversion constructor: vec matmul constrains the constructor
+    // result to UseB, propagateSameUse flows UseB back to C1 (again).
+    coopVecMatMulHW(v6, v7, coopmatHW<float16_t, 16, 16>(C1));
+}

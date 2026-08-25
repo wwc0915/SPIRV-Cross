@@ -1,0 +1,31 @@
+#version 450 core
+#extension GL_KHR_memory_scope_semantics : enable
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer Buf { float16_t data[]; } buf;
+
+// Test 6: All role buckets with valid GLSL variables
+// X is used as both A and B, which is allowed because both are OperandAB.
+// C and D* variables cover the Accumulator role.
+void main()
+{
+    const ivec2 shape16 = ivec2(16, 16);
+    const ivec2 zeroOffset = ivec2(0, 0);
+
+    coopmatHW<float16_t, 16, 16> X;
+    coopmatHW<float16_t, 16, 16> A, B, C;
+    coopmatHW<float16_t, 16, 16> D0, D1, D2;
+
+    coopMatLoadHW(X, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(A, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(B, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(C, buf.data, shape16, zeroOffset, gl_CooperativeMatrixLayoutRowMajorHW);
+
+    // X as left and right: left_count == right_count, so it resolves to useA.
+    coopMatMulAddHW(D0, X, B, C);
+    coopMatMulAddHW(D1, A, X, C);
+    coopMatMulAddHW(D2, A, B, C);
+}

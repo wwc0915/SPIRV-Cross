@@ -643,7 +643,7 @@ void CompilerGLSL::reject_hw_neural_extensions()
 	// (MSL/HLSL/CPP/Reflect) so they fail-fast with a clear message instead of silently emitting
 	// GLSL intrinsics via the base emit_instruction fallback.
 	for (auto &ext : ir.declared_extensions)
-		if (ext.rfind("SPV_HW_", 0) == 0)
+		if (ext == "SPV_HW_neural_shader")
 			SPIRV_CROSS_THROW(ext + " extension is only supported by the GLSL backend.");
 
 	for (auto &cap : ir.declared_capabilities)
@@ -7620,6 +7620,46 @@ string CompilerGLSL::to_ternary_expression(const SPIRType &restype, uint32_t sel
 	}
 
 	return expr;
+}
+
+string CompilerGLSL::to_coopmat_layout_expression(uint32_t layout_id)
+{
+	if (auto *layout_const = maybe_get<SPIRConstant>(layout_id))
+	{
+		uint32_t val = layout_const->scalar();
+		if (val != 0 && val != 1)
+			SPIRV_CROSS_THROW("CooperativeMatrixLayoutHW must be 0 (RowMajor) or 1 (ColumnMajor).");
+		return val != 0 ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW";
+	}
+
+	if (auto *cop = maybe_get<SPIRConstantOp>(layout_id))
+	{
+		if (cop->opcode == OpSelect)
+		{
+			if (cop->arguments.size() < 3)
+				SPIRV_CROSS_THROW("OpSpecConstantOp OpSelect requires 3 arguments.");
+
+			auto *true_const = maybe_get<SPIRConstant>(cop->arguments[1]);
+			auto *false_const = maybe_get<SPIRConstant>(cop->arguments[2]);
+
+			if (!true_const || !false_const)
+				SPIRV_CROSS_THROW("Ternary operator for CooperativeMatrixLayoutHW must select between constant values.");
+
+			uint32_t true_val = true_const->scalar();
+			uint32_t false_val = false_const->scalar();
+
+		if ((true_val != 0 && true_val != 1) || (false_val != 0 && false_val != 1))
+			SPIRV_CROSS_THROW("Ternary operator for CooperativeMatrixLayoutHW must select between "
+			                  "0 (RowMajor) and 1 (ColumnMajor).");
+
+		auto true_name = true_val != 0 ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW";
+		auto false_name = false_val != 0 ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW";
+		return join(to_enclosed_expression(cop->arguments[0]), " ? ", true_name, " : ", false_name);
+		}
+		SPIRV_CROSS_THROW("Unsupported spec constant op for CooperativeMatrixLayoutHW.");
+	}
+
+	return to_expression(layout_id);
 }
 
 void CompilerGLSL::emit_mix_op(uint32_t result_type, uint32_t id, uint32_t left, uint32_t right, uint32_t lerp)
@@ -15598,13 +15638,12 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		emit_uninitialized_temporary_expression(result_type, id);
 
 		auto expr = to_expression(ptr);
-		auto &layout_const = get<SPIRConstant>(layout_id);
-		bool is_column_major = layout_const.scalar() != 0;
+		auto layout_expr = to_coopmat_layout_expression(layout_id);
 
 		statement("coopMatLoadHW(", to_expression(id), ", ", expr, ", ",
 		          to_expression(src_shape), ", ",
 		          to_expression(src_offset), ", ",
-		          is_column_major ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW", ");");
+		          layout_expr, ");");
 
 		register_read(id, ptr, false);
 		break;
@@ -15750,12 +15789,11 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t layout_id = ops[4];
 
 		auto expr = to_expression(ptr);
-		auto &layout_const = get<SPIRConstant>(layout_id);
-		bool is_column_major = layout_const.scalar() != 0;
+		auto layout_expr = to_coopmat_layout_expression(layout_id);
 
 		statement("coopMatStoreHW(", to_expression(object), ", ", expr, ", ", to_expression(src_shape), ", ",
 		          to_expression(src_offset), ", ",
-		          is_column_major ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW",
+		          layout_expr,
 		          ");");
 
 		register_write(object);

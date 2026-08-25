@@ -1,0 +1,25 @@
+#version 450 core
+#extension GL_HW_neural_shader : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer Output {
+    int32_t result0;
+    uint32_t result1;
+    uint32_t result2;
+} outputBuffer;
+
+void main()
+{
+    int32_t value = int32_t(gl_LocalInvocationID.x);
+    uint32_t src0 = uint32_t(gl_LocalInvocationID.x);
+    uint32_t src1 = 0x01020304u;
+    uint32_t mask = 0x3210u;
+    uint32_t fill = 0xffffffffu;
+    int32_t shift = 4;
+
+    outputBuffer.result0 = shufidx(value, 31);
+    outputBuffer.result1 = bytePrmt(src0, src1, mask);
+    outputBuffer.result2 = shuffle_fill_down(src0, fill, shift);
+}

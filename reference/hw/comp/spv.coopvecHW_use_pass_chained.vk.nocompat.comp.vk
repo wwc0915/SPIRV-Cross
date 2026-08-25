@@ -1,0 +1,27 @@
+#version 450
+#if defined(GL_AMD_gpu_shader_half_float)
+#extension GL_AMD_gpu_shader_half_float : require
+#elif defined(GL_EXT_shader_explicit_arithmetic_types_float16)
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#else
+#error No extension available for FP16.
+#endif
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_HW_neural_shader : require
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    coopvecHW<float16_t, 16u> v0;
+    coopmatHW<float16_t, 16u, 16u> wmat1;
+    coopvecHW<float16_t, 16u> _18;
+    coopVecMatMulHW(_18, v0, wmat1);
+    coopvecHW<float16_t, 16u> tempArg = _18;
+    coopvecHW<float16_t, 16u> inter = tempArg;
+    coopmatHW<float16_t, 16u, 16u> wmat2;
+    coopvecHW<float16_t, 16u> _25;
+    coopVecMatMulHW(_25, inter, wmat2);
+    coopvecHW<float16_t, 16u> tempArg_1 = _25;
+    coopvecHW<float16_t, 16u> v2 = tempArg_1;
+}
+

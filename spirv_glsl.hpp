@@ -814,6 +814,7 @@ protected:
 	std::string to_extract_component_expression(uint32_t id, uint32_t index);
 	std::string to_extract_constant_composite_expression(uint32_t result_type, const SPIRConstant &c,
 	                                                     const uint32_t *chain, uint32_t length);
+	std::string to_coopmat_layout_expression(uint32_t layout_id);
 	static bool needs_enclose_expression(const std::string &expr);
 	std::string enclose_expression(const std::string &expr);
 	std::string dereference_expression(const SPIRType &expression_type, const std::string &expr);
