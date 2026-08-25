@@ -30,7 +30,7 @@ void main()
     coopmatHW<float16_t, 16u, 16u> tempArg = _41;
     coopmatHW<float16_t, 16u, 16u> A = tempArg;
     coopmatHW<float16_t, 16u, 16u> _49;
-    coopMatLoadHW(_49, buf.data, ivec2(16), ivec2(0), specColMajor ? gl_CooperativeMatrixLayoutColumnMajorHW : gl_CooperativeMatrixLayoutRowMajorHW);
+    coopMatLoadHW(_49, buf.data, ivec2(16), ivec2(0), _48);
     coopmatHW<float16_t, 16u, 16u> tempArg_1 = _49;
     coopmatHW<float16_t, 16u, 16u> B = tempArg_1;
     coopmatHW<float16_t, 16u, 16u> _56;

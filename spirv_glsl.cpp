@@ -7652,9 +7652,7 @@ string CompilerGLSL::to_coopmat_layout_expression(uint32_t layout_id)
 			SPIRV_CROSS_THROW("Ternary operator for CooperativeMatrixLayoutHW must select between "
 			                  "0 (RowMajor) and 1 (ColumnMajor).");
 
-		auto true_name = true_val != 0 ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW";
-		auto false_name = false_val != 0 ? "gl_CooperativeMatrixLayoutColumnMajorHW" : "gl_CooperativeMatrixLayoutRowMajorHW";
-		return join(to_enclosed_expression(cop->arguments[0]), " ? ", true_name, " : ", false_name);
+		return to_expression(layout_id);
 		}
 		SPIRV_CROSS_THROW("Unsupported spec constant op for CooperativeMatrixLayoutHW.");
 	}
